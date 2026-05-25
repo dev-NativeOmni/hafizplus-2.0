@@ -19,8 +19,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'status',
-        'email_verified_at',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -31,8 +30,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'role_id' => 'integer',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -56,14 +57,27 @@ class User extends Authenticatable
         return $this->hasOne(Student::class);
     }
 
-    public function internalNotifications(): HasMany
+    public function student(): HasOne
     {
-        return $this->hasMany(InternalNotification::class);
+        return $this->studentProfile();
     }
 
-    public function unreadInternalNotifications(): HasMany
+    public function systemNotifications(): HasMany
     {
-        return $this->internalNotifications()->unread();
+        return $this->hasMany(SystemNotification::class);
+    }
+
+    public function unreadSystemNotifications(): HasMany
+    {
+        return $this->systemNotifications()
+            ->unread()
+            ->published()
+            ->latest();
+    }
+
+    public function createdSystemNotifications(): HasMany
+    {
+        return $this->hasMany(SystemNotification::class, 'created_by');
     }
 
     public function hasRole(string $role): bool
@@ -78,15 +92,6 @@ class User extends Authenticatable
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return (bool) ($this->is_active ?? true);
     }
-    public function systemNotifications(): HasMany
-    {
-        return $this->hasMany(SystemNotification::class);
-    }
-
-    public function unreadSystemNotifications(): HasMany
-    {
-        return $this->systemNotifications()->whereNull('read_at');
-    }
-    }
+}

@@ -8,46 +8,47 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('internal_notifications', function (Blueprint $table) {
+        if (Schema::hasTable('system_notifications')) {
+            return;
+        }
+
+        Schema::create('system_notifications', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('user_id')
-                ->constrained('users')
+                ->constrained()
                 ->cascadeOnDelete();
 
-            $table->string('type', 80);
-            $table->string('title', 180);
+            $table->foreignId('student_id')
+                ->nullable()
+                ->constrained('students')
+                ->nullOnDelete();
+
+            $table->foreignId('created_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->string('type')->index();
+            $table->string('title');
             $table->text('message');
 
+            $table->string('priority')->default('normal')->index();
             $table->string('action_url')->nullable();
+            $table->json('data')->nullable();
 
-            $table->string('source_type')->nullable();
-            $table->unsignedBigInteger('source_id')->nullable();
-
-            $table->enum('priority', [
-                'low',
-                'normal',
-                'high',
-            ])->default('normal');
-
-            $table->timestamp('read_at')->nullable();
+            $table->timestamp('read_at')->nullable()->index();
 
             $table->timestamps();
 
             $table->index(['user_id', 'read_at']);
-            $table->index(['type']);
-            $table->index(['priority']);
-            $table->index(['source_type', 'source_id']);
-
-            $table->unique(
-                ['user_id', 'type', 'source_type', 'source_id'],
-                'internal_notifications_unique_source'
-            );
+            $table->index(['user_id', 'type']);
+            $table->index(['student_id', 'type']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('internal_notifications');
+        Schema::dropIfExists('system_notifications');
     }
 };

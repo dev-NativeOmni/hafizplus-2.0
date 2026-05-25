@@ -2,16 +2,16 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ClassRoomController;
+use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HafalanRecordController;
 use App\Http\Controllers\HafalanTargetController;
-use App\Http\Controllers\InternalNotificationController;
 use App\Http\Controllers\MurajaahRecordController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProgramController;
-use App\Http\Controllers\QuickInputController;
 use App\Http\Controllers\ProgressController;
+use App\Http\Controllers\QuickInputController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SystemNotificationController;
@@ -23,6 +23,12 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/dashboard', [DashboardController::class, 'redirect'])
         ->name('dashboard');
 
@@ -48,28 +54,49 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Internal Notifications
+    | System Notifications
+    |--------------------------------------------------------------------------
+    | Index/show/read/delete boleh diakses semua user login.
+    | Create/store/edit/update hanya admin dan super admin.
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/notifications', [InternalNotificationController::class, 'index'])
-        ->name('notifications.index');
+    Route::prefix('system-notifications')
+        ->name('system-notifications.')
+        ->group(function () {
+            Route::get('/', [SystemNotificationController::class, 'index'])
+                ->name('index');
 
-    Route::post('/notifications/sync', [InternalNotificationController::class, 'sync'])
-        ->name('notifications.sync');
+            Route::patch('/mark-all-read', [SystemNotificationController::class, 'markAllAsRead'])
+                ->name('mark-all-read');
 
-    Route::patch('/notifications/mark-all-read', [InternalNotificationController::class, 'markAllAsRead'])
-        ->name('notifications.mark-all-read');
+            Route::middleware(['role:super_admin,admin'])->group(function () {
+                Route::get('/create', [SystemNotificationController::class, 'create'])
+                    ->name('create');
 
-    Route::patch('/notifications/{notification}/mark-as-read', [InternalNotificationController::class, 'markAsRead'])
-        ->name('notifications.mark-as-read');
+                Route::post('/', [SystemNotificationController::class, 'store'])
+                    ->name('store');
 
-    Route::delete('/notifications/{notification}', [InternalNotificationController::class, 'destroy'])
-        ->name('notifications.destroy');
+                Route::get('/{systemNotification}/edit', [SystemNotificationController::class, 'edit'])
+                    ->name('edit');
+
+                Route::patch('/{systemNotification}', [SystemNotificationController::class, 'update'])
+                    ->name('update');
+            });
+
+            Route::get('/{systemNotification}', [SystemNotificationController::class, 'show'])
+                ->name('show');
+
+            Route::patch('/{systemNotification}/mark-as-read', [SystemNotificationController::class, 'markAsRead'])
+                ->name('mark-as-read');
+
+            Route::delete('/{systemNotification}', [SystemNotificationController::class, 'destroy'])
+                ->name('destroy');
+        });
 
     /*
     |--------------------------------------------------------------------------
-    | Master Data
+    | Admin Area
     |--------------------------------------------------------------------------
     */
 
@@ -86,35 +113,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
             ->name('audit-logs.show');
 
-        Route::prefix('system-notifications')
-            ->name('system-notifications.')
+        Route::prefix('database-backups')
+            ->name('database-backups.')
             ->group(function () {
-                Route::get('/', [SystemNotificationController::class, 'index'])
+                Route::get('/', [DatabaseBackupController::class, 'index'])
                     ->name('index');
 
-                Route::get('/create', [SystemNotificationController::class, 'create'])
-                    ->name('create');
-
-                Route::post('/', [SystemNotificationController::class, 'store'])
+                Route::post('/', [DatabaseBackupController::class, 'store'])
                     ->name('store');
 
-                Route::get('/{systemNotification}', [SystemNotificationController::class, 'show'])
-                    ->name('show');
+                Route::get('/{filename}/download', [DatabaseBackupController::class, 'download'])
+                    ->name('download');
 
-                Route::get('/{systemNotification}/edit', [SystemNotificationController::class, 'edit'])
-                    ->name('edit');
-
-                Route::patch('/{systemNotification}', [SystemNotificationController::class, 'update'])
-                    ->name('update');
-
-                Route::delete('/{systemNotification}', [SystemNotificationController::class, 'destroy'])
+                Route::delete('/{filename}', [DatabaseBackupController::class, 'destroy'])
                     ->name('destroy');
-
-                Route::patch('/{systemNotification}/mark-as-read', [SystemNotificationController::class, 'markAsRead'])
-                    ->name('mark-as-read');
-
-                Route::patch('/mark-all-read', [SystemNotificationController::class, 'markAllAsRead'])
-                    ->name('mark-all-read');
             });
     });
 
@@ -148,7 +160,7 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Reports
+    | Progress & Reports
     |--------------------------------------------------------------------------
     */
 
