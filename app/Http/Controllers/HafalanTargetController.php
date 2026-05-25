@@ -5,180 +5,252 @@ namespace App\Http\Controllers;
 use App\Models\HafalanTarget;
 use App\Models\Student;
 use App\Models\Surah;
-use App\Services\UserAccessService;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class HafalanTargetController extends Controller
 {
-    public function index(Request $request, UserAccessService $accessService): View
+    public function index(Request $request): View
     {
-        Gate::authorize('viewAny', HafalanTarget::class);
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
 
-        $visibleStudentIds = $accessService->visibleStudentIds($request->user());
-
-        $targets = HafalanTarget::query()
-            ->with(['student.classRoom', 'surah', 'teacher.user'])
+        $query = HafalanTarget::query()
+            ->with([
+                'student.classRoom.program',
+                'surah',
+                'teacher.user',
+            ])
             ->whereIn('student_id', $visibleStudentIds)
             ->when($request->filled('student_id'), function ($query) use ($request, $visibleStudentIds) {
-                if ($visibleStudentIds->contains((int) $request->student_id)) {
-                    $query->where('student_id', $request->student_id);
+                $studentId = (int) $request->input('student_id');
+
+                if ($visibleStudentIds->contains($studentId)) {
+                    $query->where('student_id', $studentId);
                 } else {
                     $query->whereRaw('1 = 0');
                 }
             })
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
-            ->when($request->filled('surah_id'), fn ($query) => $query->where('surah_id', $request->surah_id))
-            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+            ->when($request->filled('status'), function ($query) use ($request) {
+                $query->where('status', $request->input('status'));
+            })
+            ->when($request->filled('surah_id'), function ($query) use ($request) {
+                $query->where('surah_id', $request->input('surah_id'));
+            })
+            ->when($request->filled('date_from'), function ($query) use ($request) {
+                $query->whereDate('target_date', '>=', $request->input('date_from'));
+            })
+            ->when($request->filled('date_to'), function ($query) use ($request) {
+                $query->whereDate('target_date', '<=', $request->input('date_to'));
+            });
+
+        $targets = (clone $query)
             ->orderBy('target_date')
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
+        $activeStatuses = $this->activeTargetStatuses();
+
+        $summary = [
+            'total' => (clone $query)->count(),
+
+            // Key ini sengaja wajib ada karena view membaca $summary['active'].
+            'active' => (clone $query)
+                ->whereIn('status', $activeStatuses)
+                ->count(),
+
+            'planned' => (clone $query)
+                ->where('status', 'planned')
+                ->count(),
+
+            'in_progress' => (clone $query)
+                ->where('status', 'in_progress')
+                ->count(),
+
+            'completed' => (clone $query)
+                ->where('status', 'completed')
+                ->count(),
+
+            'missed' => (clone $query)
+                ->where('status', 'missed')
+                ->count(),
+
+            'cancelled' => (clone $query)
+                ->where('status', 'cancelled')
+                ->count(),
+
+            'overdue' => (clone $query)
+                ->whereIn('status', $activeStatuses)
+                ->whereDate('target_date', '<', today())
+                ->count(),
+        ];
+
         $students = Student::query()
+            ->with(['classRoom.program'])
             ->whereIn('id', $visibleStudentIds)
+            ->when(Schema::hasColumn('students', 'status'), function ($query) {
+                $query->where('status', 'active');
+            })
             ->orderBy('name')
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy('number')
+            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
             ->get();
 
-        return view('hafalan-targets.index', compact('targets', 'students', 'surahs'));
+        $statusOptions = $this->targetStatuses();
+
+        return view('hafalan-targets.index', compact(
+            'targets',
+            'students',
+            'surahs',
+            'summary',
+            'statusOptions'
+        ));
     }
 
-    public function create(Request $request, UserAccessService $accessService): View
+    public function create(Request $request): View
     {
-        Gate::authorize('create', HafalanTarget::class);
-
-        $visibleStudentIds = $accessService->visibleStudentIds($request->user());
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         $students = Student::query()
+            ->with(['classRoom.program'])
             ->whereIn('id', $visibleStudentIds)
-            ->where('status', 'active')
+            ->when(Schema::hasColumn('students', 'status'), function ($query) {
+                $query->where('status', 'active');
+            })
             ->orderBy('name')
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy('number')
+            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
             ->get();
 
-        return view('hafalan-targets.create', compact('students', 'surahs'));
+        $statusOptions = $this->targetStatuses();
+
+        return view('hafalan-targets.create', compact(
+            'students',
+            'surahs',
+            'statusOptions'
+        ));
     }
 
-    public function store(Request $request, UserAccessService $accessService): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        Gate::authorize('create', HafalanTarget::class);
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
 
-        $validated = $this->validateTarget($request, $accessService);
+        $validated = $this->validateTarget($request, $visibleStudentIds);
 
-        $student = Student::findOrFail($validated['student_id']);
+        $student = Student::query()->findOrFail($validated['student_id']);
 
-        HafalanTarget::create([
-            'student_id' => $student->id,
-            'teacher_id' => $this->resolveTeacherId($request, $student),
-            'surah_id' => $validated['surah_id'],
-            'ayah_start' => $validated['ayah_start'],
-            'ayah_end' => $validated['ayah_end'],
-            'target_date' => $validated['target_date'],
-            'status' => $validated['status'] ?? 'active',
-            'completed_at' => ($validated['status'] ?? 'active') === 'completed'
-                ? ($validated['completed_at'] ?? now())
-                : null,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $data = $this->targetPayload($validated);
+        $data['student_id'] = $student->id;
+
+        if (Schema::hasColumn('hafalan_targets', 'teacher_id')) {
+            $data['teacher_id'] = $this->resolveTeacherId($request, $student);
+        }
+
+        if (Schema::hasColumn('hafalan_targets', 'teacher_profile_id')) {
+            $data['teacher_profile_id'] = $this->resolveTeacherId($request, $student);
+        }
+
+        if (empty($data['status'])) {
+            $data['status'] = $this->defaultOpenTargetStatus();
+        }
+
+        HafalanTarget::query()->create($data);
 
         return redirect()
             ->route('hafalan-targets.index')
             ->with('success', 'Target hafalan berhasil ditambahkan.');
     }
 
-    public function show(HafalanTarget $hafalanTarget): View
+    public function show(Request $request, HafalanTarget $hafalanTarget): View
     {
-        Gate::authorize('view', $hafalanTarget);
+        $this->authorizeTargetAccess($request, $hafalanTarget);
 
-        $hafalanTarget->load(['student.classRoom', 'student.program', 'surah', 'teacher.user']);
-
-        return view('hafalan-targets.show', [
-            'hafalanTarget' => $hafalanTarget,
-            'target' => $hafalanTarget,
+        $hafalanTarget->load([
+            'student.classRoom.program',
+            'surah',
+            'teacher.user',
         ]);
+
+        $target = $hafalanTarget;
+
+        return view('hafalan-targets.show', compact(
+            'hafalanTarget',
+            'target'
+        ));
     }
 
-    public function edit(Request $request, HafalanTarget $hafalanTarget, UserAccessService $accessService): View
+    public function edit(Request $request, HafalanTarget $hafalanTarget): View
     {
-        Gate::authorize('update', $hafalanTarget);
+        $this->authorizeTargetAccess($request, $hafalanTarget);
 
-        $visibleStudentIds = $accessService->visibleStudentIds($request->user());
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         $students = Student::query()
+            ->with(['classRoom.program'])
             ->whereIn('id', $visibleStudentIds)
-            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy('number')
+            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
             ->get();
 
-        return view('hafalan-targets.edit', [
-            'hafalanTarget' => $hafalanTarget,
-            'target' => $hafalanTarget,
-            'students' => $students,
-            'surahs' => $surahs,
-        ]);
+        $statusOptions = $this->targetStatuses();
+
+        $target = $hafalanTarget;
+
+        return view('hafalan-targets.edit', compact(
+            'hafalanTarget',
+            'target',
+            'students',
+            'surahs',
+            'statusOptions'
+        ));
     }
 
-    public function update(Request $request, HafalanTarget $hafalanTarget, UserAccessService $accessService): RedirectResponse
+    public function update(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
-        Gate::authorize('update', $hafalanTarget);
+        $this->authorizeTargetAccess($request, $hafalanTarget);
 
-        $validated = $this->validateTarget($request, $accessService);
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
 
-        $student = Student::findOrFail($validated['student_id']);
+        $validated = $this->validateTarget($request, $visibleStudentIds);
 
-        $status = $validated['status'] ?? $hafalanTarget->status;
+        $student = Student::query()->findOrFail($validated['student_id']);
 
-        $hafalanTarget->update([
-            'student_id' => $student->id,
-            'teacher_id' => $this->resolveTeacherId($request, $student),
-            'surah_id' => $validated['surah_id'],
-            'ayah_start' => $validated['ayah_start'],
-            'ayah_end' => $validated['ayah_end'],
-            'target_date' => $validated['target_date'],
-            'status' => $status,
-            'completed_at' => $status === 'completed'
-                ? ($validated['completed_at'] ?? $hafalanTarget->completed_at ?? now())
-                : null,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $data = $this->targetPayload($validated);
+        $data['student_id'] = $student->id;
+
+        if (Schema::hasColumn('hafalan_targets', 'teacher_id')) {
+            $data['teacher_id'] = $this->resolveTeacherId($request, $student);
+        }
+
+        if (Schema::hasColumn('hafalan_targets', 'teacher_profile_id')) {
+            $data['teacher_profile_id'] = $this->resolveTeacherId($request, $student);
+        }
+
+        $hafalanTarget->update($data);
 
         return redirect()
             ->route('hafalan-targets.index')
             ->with('success', 'Target hafalan berhasil diperbarui.');
     }
 
-    public function complete(HafalanTarget $hafalanTarget): RedirectResponse
+    public function destroy(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
-        Gate::authorize('update', $hafalanTarget);
-
-        $hafalanTarget->update([
-            'status' => 'completed',
-            'completed_at' => $hafalanTarget->completed_at ?? now(),
-        ]);
-
-        return redirect()
-            ->route('hafalan-targets.index')
-            ->with('success', 'Target hafalan berhasil ditandai selesai.');
-    }
-
-    public function destroy(HafalanTarget $hafalanTarget): RedirectResponse
-    {
-        Gate::authorize('delete', $hafalanTarget);
+        $this->authorizeTargetAccess($request, $hafalanTarget);
 
         $hafalanTarget->delete();
 
@@ -187,9 +259,41 @@ class HafalanTargetController extends Controller
             ->with('success', 'Target hafalan berhasil dihapus.');
     }
 
-    private function validateTarget(Request $request, UserAccessService $accessService): array
+    public function complete(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
-        $visibleStudentIds = $accessService->visibleStudentIds($request->user());
+        $this->authorizeTargetAccess($request, $hafalanTarget);
+
+        $data = [
+            'status' => 'completed',
+        ];
+
+        if (Schema::hasColumn('hafalan_targets', 'completed_at')) {
+            $data['completed_at'] = now();
+        }
+
+        $hafalanTarget->update($data);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Target hafalan ditandai selesai.');
+    }
+
+    public function markMissed(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
+    {
+        $this->authorizeTargetAccess($request, $hafalanTarget);
+
+        $hafalanTarget->update([
+            'status' => 'missed',
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Target hafalan ditandai terlewat.');
+    }
+
+    private function validateTarget(Request $request, Collection $visibleStudentIds): array
+    {
+        $statuses = $this->targetStatuses();
 
         $validator = Validator::make($request->all(), [
             'student_id' => ['required', 'integer', 'exists:students,id'],
@@ -197,24 +301,143 @@ class HafalanTargetController extends Controller
             'ayah_start' => ['required', 'integer', 'min:1'],
             'ayah_end' => ['required', 'integer', 'min:1', 'gte:ayah_start'],
             'target_date' => ['required', 'date'],
-            'status' => ['nullable', Rule::in(['active', 'completed', 'cancelled'])],
-            'completed_at' => ['nullable', 'date'],
+            'status' => ['nullable', Rule::in($statuses)],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $validator->after(function ($validator) use ($request, $visibleStudentIds) {
-            if (! $visibleStudentIds->contains((int) $request->input('student_id'))) {
-                $validator->errors()->add('student_id', 'Santri tidak boleh diakses oleh akun ini.');
+            $studentId = (int) $request->input('student_id');
+
+            if (! $visibleStudentIds->contains($studentId)) {
+                $validator->errors()->add(
+                    'student_id',
+                    'Santri tidak boleh diakses oleh akun ini.'
+                );
             }
 
-            $surah = Surah::find($request->input('surah_id'));
+            $surah = Surah::query()->find($request->input('surah_id'));
 
-            if ($surah && (int) $request->input('ayah_end') > (int) $surah->total_ayah) {
-                $validator->errors()->add('ayah_end', "Ayat akhir tidak boleh melebihi {$surah->total_ayah}.");
+            if ($surah && isset($surah->total_ayah)) {
+                if ((int) $request->input('ayah_end') > (int) $surah->total_ayah) {
+                    $validator->errors()->add(
+                        'ayah_end',
+                        'Ayat akhir tidak boleh melebihi jumlah ayat surah.'
+                    );
+                }
             }
         });
 
         return $validator->validate();
+    }
+
+    private function targetPayload(array $validated): array
+    {
+        $allowedColumns = Schema::getColumnListing('hafalan_targets');
+
+        $payload = [];
+
+        foreach ($validated as $key => $value) {
+            if (in_array($key, $allowedColumns, true)) {
+                $payload[$key] = $value;
+            }
+        }
+
+        return $payload;
+    }
+
+    private function authorizeTargetAccess(Request $request, HafalanTarget $target): void
+    {
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
+
+        abort_unless(
+            $visibleStudentIds->contains((int) $target->student_id),
+            403,
+            'Target hafalan tidak boleh diakses oleh akun ini.'
+        );
+    }
+
+    private function visibleStudentIds(?User $user): Collection
+    {
+        if (! $user) {
+            return collect();
+        }
+
+        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+            return Student::query()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+        }
+
+        if ($user->hasRole('teacher')) {
+            $teacherProfileId = $user->teacherProfile?->id;
+
+            if (! $teacherProfileId) {
+                return collect();
+            }
+
+            return Student::query()
+                ->where(function ($query) use ($teacherProfileId) {
+                    if (Schema::hasColumn('students', 'teacher_id')) {
+                        $query->orWhere('teacher_id', $teacherProfileId);
+                    }
+
+                    if (Schema::hasColumn('students', 'teacher_profile_id')) {
+                        $query->orWhere('teacher_profile_id', $teacherProfileId);
+                    }
+
+                    $query->orWhereHas('classRoom', function ($classRoomQuery) use ($teacherProfileId) {
+                        if (Schema::hasColumn('class_rooms', 'teacher_id')) {
+                            $classRoomQuery->where('teacher_id', $teacherProfileId);
+                        }
+
+                        if (Schema::hasColumn('class_rooms', 'teacher_profile_id')) {
+                            $classRoomQuery->orWhere('teacher_profile_id', $teacherProfileId);
+                        }
+                    });
+                })
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+        }
+
+        if ($user->hasRole('parent')) {
+            $parentProfileId = $user->parentProfile?->id;
+
+            if (! $parentProfileId) {
+                return collect();
+            }
+
+            $query = Student::query();
+
+            if (Schema::hasTable('parent_student')) {
+                $query->whereHas('parents', function ($parentQuery) use ($parentProfileId) {
+                    $parentQuery->where('parent_profiles.id', $parentProfileId);
+                });
+            } elseif (Schema::hasColumn('students', 'parent_id')) {
+                $query->where('parent_id', $parentProfileId);
+            } elseif (Schema::hasColumn('students', 'parent_profile_id')) {
+                $query->where('parent_profile_id', $parentProfileId);
+            } else {
+                return collect();
+            }
+
+            return $query
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+        }
+
+        if ($user->hasRole('student')) {
+            $studentId = null;
+
+            if (Schema::hasColumn('students', 'user_id')) {
+                $studentId = Student::query()
+                    ->where('user_id', $user->id)
+                    ->value('id');
+            }
+
+            return $studentId ? collect([(int) $studentId]) : collect();
+        }
+
+        return collect();
     }
 
     private function resolveTeacherId(Request $request, Student $student): ?int
@@ -225,6 +448,74 @@ class HafalanTargetController extends Controller
             return $user->teacherProfile?->id;
         }
 
-        return $student->teacher_id;
+        if (Schema::hasColumn('students', 'teacher_id')) {
+            return $student->teacher_id;
+        }
+
+        if (Schema::hasColumn('students', 'teacher_profile_id')) {
+            return $student->teacher_profile_id;
+        }
+
+        return null;
+    }
+
+    private function targetStatuses(): array
+    {
+        try {
+            $column = DB::selectOne("SHOW COLUMNS FROM hafalan_targets LIKE 'status'");
+
+            if ($column && isset($column->Type)) {
+                preg_match_all("/'([^']+)'/", (string) $column->Type, $matches);
+
+                if (! empty($matches[1])) {
+                    return $matches[1];
+                }
+            }
+        } catch (Throwable) {
+            // Fallback di bawah sengaja dibiarkan.
+        }
+
+        return [
+            'active',
+            'planned',
+            'in_progress',
+            'completed',
+            'missed',
+            'cancelled',
+        ];
+    }
+
+    private function activeTargetStatuses(): array
+    {
+        $statuses = $this->targetStatuses();
+
+        $activeStatuses = array_values(array_intersect($statuses, [
+            'active',
+            'planned',
+            'in_progress',
+        ]));
+
+        return ! empty($activeStatuses)
+            ? $activeStatuses
+            : [$this->defaultOpenTargetStatus()];
+    }
+
+    private function defaultOpenTargetStatus(): string
+    {
+        $statuses = $this->targetStatuses();
+
+        if (in_array('active', $statuses, true)) {
+            return 'active';
+        }
+
+        if (in_array('planned', $statuses, true)) {
+            return 'planned';
+        }
+
+        if (in_array('in_progress', $statuses, true)) {
+            return 'in_progress';
+        }
+
+        return $statuses[0] ?? 'active';
     }
 }

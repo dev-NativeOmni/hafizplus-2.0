@@ -1,101 +1,128 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Detail Audit Log
-            </h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Detail Audit Log
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    Informasi lengkap aktivitas sistem.
+                </p>
+            </div>
 
-            <a
-                href="{{ route('audit-logs.index') }}"
-                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
-            >
+            <a href="{{ route('audit-logs.index') }}"
+               class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                 Kembali
             </a>
         </div>
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    Ringkasan
+                </h3>
+
+                <dl class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <div class="text-gray-500">Waktu</div>
-                        <div class="font-semibold text-gray-900">
+                        <dt class="text-sm font-medium text-gray-500">Waktu</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
                             {{ $auditLog->created_at?->format('d M Y H:i:s') }}
-                        </div>
+                        </dd>
                     </div>
 
                     <div>
-                        <div class="text-gray-500">Event</div>
-                        <div class="font-semibold text-gray-900">
+                        <dt class="text-sm font-medium text-gray-500">Event</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
                             {{ $auditLog->event_label }}
-                        </div>
+                        </dd>
                     </div>
 
                     <div>
-                        <div class="text-gray-500">User</div>
-                        <div class="font-semibold text-gray-900">
+                        <dt class="text-sm font-medium text-gray-500">User</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
                             {{ $auditLog->user?->name ?? 'System' }}
-                        </div>
-                        <div class="text-gray-500">
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Email User</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
                             {{ $auditLog->user?->email ?? '-' }}
-                        </div>
+                        </dd>
                     </div>
 
                     <div>
-                        <div class="text-gray-500">Data</div>
-                        <div class="font-semibold text-gray-900">
-                            {{ class_basename($auditLog->auditable_type) }}
-                        </div>
-                        <div class="text-gray-500">
-                            ID: {{ $auditLog->auditable_id }}
-                        </div>
+                        <dt class="text-sm font-medium text-gray-500">Model</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $auditLog->auditable_type_label }}
+                        </dd>
                     </div>
 
                     <div>
-                        <div class="text-gray-500">IP Address</div>
-                        <div class="font-semibold text-gray-900">
+                        <dt class="text-sm font-medium text-gray-500">Objek</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $auditLog->auditable_label ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Auditable ID</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $auditLog->auditable_id ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">IP Address</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
                             {{ $auditLog->ip_address ?? '-' }}
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="text-gray-500">URL</div>
-                        <div class="font-semibold text-gray-900 break-all">
-                            {{ $auditLog->url ?? '-' }}
-                        </div>
+                        </dd>
                     </div>
 
                     <div class="md:col-span-2">
-                        <div class="text-gray-500">User Agent</div>
-                        <div class="font-semibold text-gray-900 break-all">
+                        <dt class="text-sm font-medium text-gray-500">Auditable Type</dt>
+                        <dd class="mt-1 text-sm text-gray-900 break-all">
+                            {{ $auditLog->auditable_type ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">URL</dt>
+                        <dd class="mt-1 text-sm text-gray-900 break-all">
+                            {{ $auditLog->url ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">User Agent</dt>
+                        <dd class="mt-1 text-sm text-gray-900 break-all">
                             {{ $auditLog->user_agent ?? '-' }}
-                        </div>
+                        </dd>
                     </div>
+                </dl>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        Nilai Lama
+                    </h3>
+
+                    <pre class="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-white">{{ json_encode($auditLog->old_values ?: [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        Nilai Baru
+                    </h3>
+
+                    <pre class="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-white">{{ json_encode($auditLog->new_values ?: [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="font-semibold text-gray-900 mb-3">
-                            Old Values
-                        </h3>
-
-                        <pre class="bg-gray-900 text-gray-100 rounded-md p-4 overflow-x-auto text-xs">{{ $auditLog->old_values ? json_encode($auditLog->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '-' }}</pre>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="font-semibold text-gray-900 mb-3">
-                            New Values
-                        </h3>
-
-                        <pre class="bg-gray-900 text-gray-100 rounded-md p-4 overflow-x-auto text-xs">{{ $auditLog->new_values ? json_encode($auditLog->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '-' }}</pre>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </x-app-layout>

@@ -2,45 +2,116 @@
 
 namespace App\Observers;
 
+use App\Models\AuditLog;
 use App\Models\HafalanRecord;
-use App\Services\HafalanTargetAutoCompletionService;
+use Illuminate\Support\Arr;
 
 class HafalanRecordObserver
 {
     public function created(HafalanRecord $hafalanRecord): void
     {
-        app(HafalanTargetAutoCompletionService::class)
-            ->completeTargetsFromRecord($hafalanRecord);
+        $this->writeLog(
+            hafalanRecord: $hafalanRecord,
+            event: 'created',
+            oldValues: null,
+            newValues: Arr::only($hafalanRecord->getAttributes(), $this->trackedFields())
+        );
     }
 
     public function updated(HafalanRecord $hafalanRecord): void
     {
-        if (
-            $hafalanRecord->wasChanged('student_id') ||
-            $hafalanRecord->wasChanged('surah_id') ||
-            $hafalanRecord->wasChanged('ayah_start') ||
-            $hafalanRecord->wasChanged('ayah_end') ||
-            $hafalanRecord->wasChanged('status') ||
-            $hafalanRecord->wasChanged('submitted_at')
-        ) {
-            app(HafalanTargetAutoCompletionService::class)
-                ->completeTargetsFromRecord($hafalanRecord);
+        $changes = Arr::except($hafalanRecord->getChanges(), [
+            'updated_at',
+        ]);
+
+        if ($changes === []) {
+            return;
         }
+
+        $changedKeys = array_keys($changes);
+
+        $oldValues = Arr::only($hafalanRecord->getOriginal(), $changedKeys);
+        $newValues = Arr::only($hafalanRecord->getAttributes(), $changedKeys);
+
+        $this->writeLog(
+            hafalanRecord: $hafalanRecord,
+            event: 'updated',
+            oldValues: $oldValues,
+            newValues: $newValues
+        );
     }
 
     public function deleted(HafalanRecord $hafalanRecord): void
     {
-        //
+        $this->writeLog(
+            hafalanRecord: $hafalanRecord,
+            event: 'deleted',
+            oldValues: Arr::only($hafalanRecord->getOriginal(), $this->trackedFields()),
+            newValues: Arr::only($hafalanRecord->getAttributes(), $this->trackedFields())
+        );
     }
 
     public function restored(HafalanRecord $hafalanRecord): void
     {
-        app(HafalanTargetAutoCompletionService::class)
-            ->completeTargetsFromRecord($hafalanRecord);
+        $this->writeLog(
+            hafalanRecord: $hafalanRecord,
+            event: 'restored',
+            oldValues: Arr::only($hafalanRecord->getOriginal(), $this->trackedFields()),
+            newValues: Arr::only($hafalanRecord->getAttributes(), $this->trackedFields())
+        );
     }
 
-    public function forceDeleted(HafalanRecord $hafalanRecord): void
+    private function writeLog(
+        HafalanRecord $hafalanRecord,
+        string $event,
+        ?array $oldValues,
+        ?array $newValues
+    ): void {
+        $runningInConsole = app()->runningInConsole();
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'auditable_type' => $hafalanRecord->getMorphClass(),
+            'auditable_id' => $hafalanRecord->getKey(),
+            'auditable_label' => $this->makeAuditableLabel($hafalanRecord),
+            'event' => $event,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'url' => $runningInConsole ? null : request()->fullUrl(),
+            'ip_address' => $runningInConsole ? null : request()->ip(),
+            'user_agent' => $runningInConsole ? null : request()->userAgent(),
+        ]);
+    }
+
+    private function makeAuditableLabel(HafalanRecord $hafalanRecord): string
     {
-        //
+        $hafalanRecord->loadMissing(['student', 'surah']);
+
+        $studentName = $hafalanRecord->student?->name
+            ?? 'Santri ID ' . $hafalanRecord->student_id;
+
+        $surahName = $hafalanRecord->surah?->name_latin
+            ?? $hafalanRecord->surah?->name
+            ?? 'Surah ID ' . $hafalanRecord->surah_id;
+
+        return $studentName . ' - ' . $surahName . ' ayat ' . $hafalanRecord->ayah_start . '-' . $hafalanRecord->ayah_end;
+    }
+
+    private function trackedFields(): array
+    {
+        return [
+            'id',
+            'student_id',
+            'teacher_id',
+            'surah_id',
+            'ayah_start',
+            'ayah_end',
+            'submission_type',
+            'score',
+            'status',
+            'notes',
+            'submitted_at',
+            'deleted_at',
+        ];
     }
 }

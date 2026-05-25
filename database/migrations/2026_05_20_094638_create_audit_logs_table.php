@@ -16,20 +16,30 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->morphs('auditable');
+            $table->string('user_name')->nullable();
+            $table->string('role_name')->nullable();
 
-            $table->string('event', 50);
+            $table->string('action', 50);
+
+            $table->nullableMorphs('auditable');
+            $table->string('auditable_label')->nullable();
+            $table->string('auditable_name')->nullable();
+
+            $table->text('description')->nullable();
+
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
 
-            $table->string('url')->nullable();
-            $table->string('ip_address', 45)->nullable();
+            $table->string('ip_address', 60)->nullable();
             $table->text('user_agent')->nullable();
+            $table->string('url')->nullable();
+            $table->string('method', 20)->nullable();
 
             $table->timestamps();
 
-            $table->index(['event', 'created_at']);
-            $table->index('user_id');
+            $table->index(['action', 'created_at']);
+            $table->index(['user_id', 'created_at']);
+            $table->index(['auditable_type', 'auditable_id']);
         });
     }
 
