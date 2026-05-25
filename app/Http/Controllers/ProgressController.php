@@ -8,6 +8,7 @@ use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\Student;
 use App\Models\Surah;
+use App\Services\StudentMotivationService;
 use App\Services\StudentProgressService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -18,7 +19,8 @@ use Illuminate\Support\Collection;
 class ProgressController extends Controller
 {
     public function __construct(
-        private readonly StudentProgressService $studentProgressService
+        private readonly StudentProgressService $studentProgressService,
+        private readonly StudentMotivationService $studentMotivationService
     ) {
     }
 
@@ -124,6 +126,8 @@ class ProgressController extends Controller
 
         $progress = $this->studentProgressService->calculate($student);
 
+        $motivation = $this->studentMotivationService->build($student, $progress);
+
         $surahProgressRows = $this->buildSurahProgressRows($student);
 
         $timelineRows = $this->buildTimelineRows($student);
@@ -156,6 +160,7 @@ class ProgressController extends Controller
         return view('progress.show', compact(
             'student',
             'progress',
+            'motivation',
             'surahProgressRows',
             'timelineRows',
             'hafalanRecords',
