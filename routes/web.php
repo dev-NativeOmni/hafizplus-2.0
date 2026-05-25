@@ -11,25 +11,18 @@ use App\Http\Controllers\ParentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\QuickInputController;
+use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\SystemNotificationController;
 use App\Http\Controllers\TeacherController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-
-    return redirect()->route('login');
+    return view('welcome');
 });
 
 Route::middleware(['auth'])->group(function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
     Route::get('/dashboard', [DashboardController::class, 'redirect'])
         ->name('dashboard');
 
@@ -55,10 +48,10 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Notifications - Primary Route
+    | Internal Notifications
     |--------------------------------------------------------------------------
-    | Route utama notifikasi internal.
     */
+
     Route::get('/notifications', [InternalNotificationController::class, 'index'])
         ->name('notifications.index');
 
@@ -76,45 +69,13 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Notifications - Compatibility Alias
-    |--------------------------------------------------------------------------
-    | Alias ini dibuat supaya navigation.blade.php yang memakai
-    | system-notifications.* tidak error.
-    */
-    Route::get('/system-notifications', [InternalNotificationController::class, 'index'])
-        ->name('system-notifications.index');
-
-    Route::post('/system-notifications/sync', [InternalNotificationController::class, 'sync'])
-        ->name('system-notifications.sync');
-
-    Route::patch('/system-notifications/mark-all-read', [InternalNotificationController::class, 'markAllAsRead'])
-        ->name('system-notifications.mark-all-read');
-
-    Route::patch('/system-notifications/read-all', [InternalNotificationController::class, 'markAllAsRead'])
-        ->name('system-notifications.read-all');
-
-    Route::patch('/system-notifications/{notification}/mark-as-read', [InternalNotificationController::class, 'markAsRead'])
-        ->name('system-notifications.mark-as-read');
-
-    Route::patch('/system-notifications/{notification}/read', [InternalNotificationController::class, 'markAsRead'])
-        ->name('system-notifications.read');
-
-    Route::delete('/system-notifications/{notification}', [InternalNotificationController::class, 'destroy'])
-        ->name('system-notifications.destroy');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Master Data - Super Admin & Admin
+    | Master Data
     |--------------------------------------------------------------------------
     */
+
     Route::middleware(['role:super_admin,admin'])->group(function () {
         Route::resource('programs', ProgramController::class);
-
-        Route::resource('class-rooms', ClassRoomController::class)
-            ->parameters([
-                'class-rooms' => 'classRoom',
-            ]);
-
+        Route::resource('class-rooms', ClassRoomController::class);
         Route::resource('teachers', TeacherController::class);
         Route::resource('parents', ParentController::class);
         Route::resource('students', StudentController::class);
@@ -124,14 +85,57 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
             ->name('audit-logs.show');
+
+        Route::prefix('system-notifications')
+            ->name('system-notifications.')
+            ->group(function () {
+                Route::get('/', [SystemNotificationController::class, 'index'])
+                    ->name('index');
+
+                Route::get('/create', [SystemNotificationController::class, 'create'])
+                    ->name('create');
+
+                Route::post('/', [SystemNotificationController::class, 'store'])
+                    ->name('store');
+
+                Route::get('/{systemNotification}', [SystemNotificationController::class, 'show'])
+                    ->name('show');
+
+                Route::get('/{systemNotification}/edit', [SystemNotificationController::class, 'edit'])
+                    ->name('edit');
+
+                Route::patch('/{systemNotification}', [SystemNotificationController::class, 'update'])
+                    ->name('update');
+
+                Route::delete('/{systemNotification}', [SystemNotificationController::class, 'destroy'])
+                    ->name('destroy');
+
+                Route::patch('/{systemNotification}/mark-as-read', [SystemNotificationController::class, 'markAsRead'])
+                    ->name('mark-as-read');
+
+                Route::patch('/mark-all-read', [SystemNotificationController::class, 'markAllAsRead'])
+                    ->name('mark-all-read');
+            });
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Hafalan, Murajaah, Target, Quick Input - Admin & Teacher
+    | Hafalan, Murajaah, Target, Quick Input
     |--------------------------------------------------------------------------
     */
+
     Route::middleware(['role:super_admin,admin,teacher'])->group(function () {
+        Route::resource('hafalan-records', HafalanRecordController::class);
+        Route::resource('murajaah-records', MurajaahRecordController::class);
+
+        Route::patch('/hafalan-targets/{hafalanTarget}/complete', [HafalanTargetController::class, 'complete'])
+            ->name('hafalan-targets.complete');
+
+        Route::patch('/hafalan-targets/{hafalanTarget}/mark-missed', [HafalanTargetController::class, 'markMissed'])
+            ->name('hafalan-targets.mark-missed');
+
+        Route::resource('hafalan-targets', HafalanTargetController::class);
+
         Route::get('/quick-inputs', [QuickInputController::class, 'index'])
             ->name('quick-inputs.index');
 
@@ -140,40 +144,32 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('/quick-inputs/murajaah', [QuickInputController::class, 'storeMurajaah'])
             ->name('quick-inputs.murajaah.store');
-
-        Route::resource('hafalan-records', HafalanRecordController::class)
-            ->parameters([
-                'hafalan-records' => 'hafalanRecord',
-            ]);
-
-        Route::resource('murajaah-records', MurajaahRecordController::class)
-            ->parameters([
-                'murajaah-records' => 'murajaahRecord',
-            ]);
-
-        Route::patch('/hafalan-targets/{hafalanTarget}/complete', [HafalanTargetController::class, 'complete'])
-            ->name('hafalan-targets.complete');
-
-        Route::resource('hafalan-targets', HafalanTargetController::class)
-            ->parameters([
-                'hafalan-targets' => 'hafalanTarget',
-            ]);
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Reports - All Authenticated Roles
+    | Reports
     |--------------------------------------------------------------------------
     */
+
     Route::middleware(['role:super_admin,admin,teacher,parent,student'])->group(function () {
+        Route::get('/progress', [ProgressController::class, 'index'])
+            ->name('progress.index');
+
+        Route::get('/progress/{student}', [ProgressController::class, 'show'])
+            ->name('progress.show');
+
         Route::get('/reports', [ReportController::class, 'index'])
             ->name('reports.index');
+
+        Route::get('/reports/export/csv', [ReportController::class, 'exportCsv'])
+            ->name('reports.export.csv');
 
         Route::get('/reports/student/{student}', [ReportController::class, 'student'])
             ->name('reports.student');
 
-        Route::get('/reports/export/csv', [ReportController::class, 'exportCsv'])
-            ->name('reports.export.csv');
+        Route::get('/reports/student/{student}/export/csv', [ReportController::class, 'exportStudentCsv'])
+            ->name('reports.student.export.csv');
     });
 
     /*
@@ -181,6 +177,7 @@ Route::middleware(['auth'])->group(function () {
     | Profile
     |--------------------------------------------------------------------------
     */
+
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -191,4 +188,4 @@ Route::middleware(['auth'])->group(function () {
         ->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
