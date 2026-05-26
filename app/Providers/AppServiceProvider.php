@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,19 +35,10 @@ class AppServiceProvider extends ServiceProvider
     {
         /*
         |--------------------------------------------------------------------------
-        | API Rate Limiter
+        | API Rate Limiting
         |--------------------------------------------------------------------------
-        |
-        | Dipakai oleh middleware throttle:api di routes/api.php.
-        | Tanpa ini, Laravel akan error:
-        | "Rate limiter [api] is not defined"
-        |
         */
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by(
-                $request->user()?->id ?: $request->ip()
-            );
-        });
+        $this->configureRateLimiting();
 
         /*
         |--------------------------------------------------------------------------
@@ -79,5 +71,77 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HafalanRecord::class, HafalanRecordPolicy::class);
         Gate::policy(MurajaahRecord::class, MurajaahRecordPolicy::class);
         Gate::policy(HafalanTarget::class, HafalanTargetPolicy::class);
+    }
+
+    private function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', function (Request $request) {
+            $maxAttempts = max(
+                1,
+                (int) config('hafizplus.api.rate_limit_per_minute', 60)
+            );
+
+            $user = $request->user();
+            $key = $user
+                ? 'user:' . $user->id
+                : 'ip:' . $request->ip();
+
+            return Limit::perMinute($maxAttempts)
+                ->by($key)
+                ->response(function (Request $request, array $headers) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Terlalu banyak request. Silakan coba lagi beberapa saat.',
+                        'data' => null,
+                        'errors' => [
+                            'rate_limit' => [
+                                'API rate limit exceeded.',
+                            ],
+                        ],
+                    ], 429, $headers);
+                });
+        });
+
+        RateLimiter::for('api-login', function (Request $request) {
+            $maxAttempts = max(
+                1,
+                (int) config('hafizplus.api.login_rate_limit_per_minute', 5)
+            );
+
+            $email = Str::lower((string) $request->input('email', 'guest'));
+            $ip = (string) $request->ip();
+
+            return [
+                Limit::perMinute($maxAttempts)
+                    ->by('login:' . $email . '|' . $ip)
+                    ->response(function (Request $request, array $headers) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Percobaan login terlalu banyak. Silakan coba lagi beberapa saat.',
+                            'data' => null,
+                            'errors' => [
+                                'login' => [
+                                    'Login rate limit exceeded.',
+                                ],
+                            ],
+                        ], 429, $headers);
+                    }),
+
+                Limit::perMinute(20)
+                    ->by('login-ip:' . $ip)
+                    ->response(function (Request $request, array $headers) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Terlalu banyak percobaan login dari alamat ini.',
+                            'data' => null,
+                            'errors' => [
+                                'login' => [
+                                    'IP login rate limit exceeded.',
+                                ],
+                            ],
+                        ], 429, $headers);
+                    }),
+            ];
+        });
     }
 }

@@ -16,6 +16,7 @@ class ApiResponse
             'success' => true,
             'message' => $message,
             'data' => $data,
+            'status_code' => $status,
         ];
 
         if (! empty($meta)) {
@@ -35,6 +36,7 @@ class ApiResponse
             'success' => false,
             'message' => $message,
             'errors' => $errors,
+            'status_code' => $status,
         ];
 
         if (! empty($meta)) {

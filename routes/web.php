@@ -201,3 +201,19 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Local Development API Tester
+|--------------------------------------------------------------------------
+|
+| Hanya aktif di APP_ENV=local.
+| Jangan dipakai sebagai halaman publik production.
+|
+*/
+if (app()->environment('local')) {
+    Route::get('/dev/api-tester', function () {
+        return view('dev.api-tester');
+    })
+        ->middleware(['auth', 'role:super_admin'])
+        ->name('dev.api-tester');
+}
