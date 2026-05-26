@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HafalanRecordController;
+use App\Http\Controllers\Api\V1\HafalanTargetController;
 use App\Http\Controllers\Api\V1\MurajaahRecordController;
 use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\SurahController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')
@@ -24,6 +26,22 @@ Route::prefix('v1')
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])
                 ->name('auth.logout');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Surah & Ayah Readonly API
+            |--------------------------------------------------------------------------
+            */
+            Route::get('/surahs', [SurahController::class, 'index'])
+                ->name('surahs.index');
+
+            Route::get('/surahs/{surah}/ayahs', [SurahController::class, 'ayahs'])
+                ->whereNumber('surah')
+                ->name('surahs.ayahs');
+
+            Route::get('/surahs/{surah}', [SurahController::class, 'show'])
+                ->whereNumber('surah')
+                ->name('surahs.show');
 
             /*
             |--------------------------------------------------------------------------
@@ -64,5 +82,17 @@ Route::prefix('v1')
             Route::get('/murajaah-records/{murajaahRecord}', [MurajaahRecordController::class, 'show'])
                 ->whereNumber('murajaahRecord')
                 ->name('murajaah-records.show');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Hafalan Targets Readonly API
+            |--------------------------------------------------------------------------
+            */
+            Route::get('/hafalan-targets', [HafalanTargetController::class, 'index'])
+                ->name('hafalan-targets.index');
+
+            Route::get('/hafalan-targets/{hafalanTarget}', [HafalanTargetController::class, 'show'])
+                ->whereNumber('hafalanTarget')
+                ->name('hafalan-targets.show');
         });
     });
