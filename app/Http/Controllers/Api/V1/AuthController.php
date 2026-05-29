@@ -3,60 +3,77 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\LoginRequest;
-use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\NewAccessToken;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
 
         $user = User::query()
-            ->with([
-                'role',
-                'teacherProfile',
-                'parentProfile',
-                'studentProfile',
-            ])
+            ->with('role')
             ->where('email', $validated['email'])
             ->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return ApiResponse::error(
-                message: 'Email atau password salah.',
+                message: 'Email atau password tidak valid.',
                 errors: [
                     'email' => [
-                        'Email atau password salah.',
+                        'Email atau password tidak valid.',
                     ],
                 ],
-                status: 422
+                status: 401
             );
         }
 
-        if (! $user->isActive()) {
+        if (($user->status ?? 'active') !== 'active') {
             return ApiResponse::error(
-                message: 'Akun tidak aktif. Hubungi admin.',
+                message: 'Akun tidak aktif. Silakan hubungi administrator.',
+                errors: [
+                    'account' => [
+                        'User account is inactive.',
+                    ],
+                ],
                 status: 403
             );
         }
 
-        $deviceName = $validated['device_name']
-            ?? $request->userAgent()
-            ?? 'HafizPlus API Client';
+        $deviceName = $validated['device_name'] ?? 'API Client';
 
-        $token = $user->createToken($deviceName)->plainTextToken;
+        $tokenExpirationDays = max(
+            1,
+            (int) config('hafizplus.api.token_expiration_days', 30)
+        );
+
+        $expiresAt = now()->addDays($tokenExpirationDays);
+
+        $newAccessToken = $user->createToken($deviceName);
+
+        $this->applyTokenExpiration($newAccessToken, $expiresAt);
+        $this->pruneUserTokens($user);
+
+        $user->load('role');
 
         return ApiResponse::success(
             data: [
+                'access_token' => $newAccessToken->plainTextToken,
                 'token_type' => 'Bearer',
-                'access_token' => $token,
-                'user' => (new UserResource($user))->resolve($request),
+                'expires_at' => $expiresAt->toISOString(),
+                'expires_in_days' => $tokenExpirationDays,
+                'user' => $this->userPayload($user),
             ],
             message: 'Login berhasil.'
         );
@@ -64,17 +81,12 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()
-            ->load([
-                'role',
-                'teacherProfile',
-                'parentProfile',
-                'studentProfile',
-            ]);
+        $user = $request->user()->load('role');
 
         return ApiResponse::success(
             data: [
-                'user' => (new UserResource($user))->resolve($request),
+                'user' => $this->userPayload($user),
+                'current_token' => $this->currentTokenPayload($request),
             ],
             message: 'Data user aktif berhasil diambil.'
         );
@@ -92,5 +104,89 @@ class AuthController extends Controller
             data: null,
             message: 'Logout berhasil.'
         );
+    }
+
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->delete();
+
+        return ApiResponse::success(
+            data: null,
+            message: 'Logout semua device berhasil.'
+        );
+    }
+
+    private function applyTokenExpiration(NewAccessToken $newAccessToken, mixed $expiresAt): void
+    {
+        if (! Schema::hasColumn('personal_access_tokens', 'expires_at')) {
+            return;
+        }
+
+        $newAccessToken->accessToken
+            ->forceFill([
+                'expires_at' => $expiresAt,
+            ])
+            ->save();
+    }
+
+    private function pruneUserTokens(User $user): void
+    {
+        if (Schema::hasColumn('personal_access_tokens', 'expires_at')) {
+            $user->tokens()
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now())
+                ->delete();
+        }
+
+        $maxActiveTokens = max(
+            1,
+            (int) config('hafizplus.api.max_active_tokens_per_user', 5)
+        );
+
+        $tokenIdsToKeep = $user->tokens()
+            ->latest('id')
+            ->limit($maxActiveTokens)
+            ->pluck('id')
+            ->all();
+
+        if (! empty($tokenIdsToKeep)) {
+            $user->tokens()
+                ->whereNotIn('id', $tokenIdsToKeep)
+                ->delete();
+        }
+    }
+
+    private function currentTokenPayload(Request $request): array
+    {
+        $token = $request->user()?->currentAccessToken();
+
+        if (! $token || ! method_exists($token, 'toArray')) {
+            return [
+                'name' => null,
+                'last_used_at' => null,
+                'expires_at' => null,
+            ];
+        }
+
+        return [
+            'name' => $token->name ?? null,
+            'last_used_at' => $token->last_used_at?->toISOString(),
+            'expires_at' => $token->expires_at?->toISOString(),
+        ];
+    }
+
+    private function userPayload(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'status' => $user->status ?? null,
+            'role' => $user->role ? [
+                'id' => $user->role->id,
+                'name' => $user->role->name,
+                'display_name' => $user->role->display_name ?? $user->role->name,
+            ] : null,
+        ];
     }
 }

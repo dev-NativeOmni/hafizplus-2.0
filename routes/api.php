@@ -26,7 +26,11 @@ Route::prefix('v1')
         | Protected API
         |--------------------------------------------------------------------------
         */
-        Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+        Route::middleware([
+            'auth:sanctum',
+            'api.token.not_expired',
+            'throttle:api',
+        ])->group(function () {
             /*
             |--------------------------------------------------------------------------
             | Auth
@@ -37,6 +41,9 @@ Route::prefix('v1')
 
             Route::post('/auth/logout', [AuthController::class, 'logout'])
                 ->name('auth.logout');
+
+            Route::post('/auth/logout-all', [AuthController::class, 'logoutAll'])
+                ->name('auth.logout-all');
 
             /*
             |--------------------------------------------------------------------------
