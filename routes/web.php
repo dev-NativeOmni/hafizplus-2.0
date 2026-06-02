@@ -210,10 +210,28 @@ require __DIR__ . '/auth.php';
 | Jangan dipakai sebagai halaman publik production.
 |
 */
-if (app()->environment('local')) {
+if (app()->environment('local', 'testing')) {
     Route::get('/dev/api-tester', function () {
         return view('dev.api-tester');
     })
         ->middleware(['auth', 'role:super_admin'])
         ->name('dev.api-tester');
+
+    Route::get('/dev/api-docs', function () {
+        return view('dev.api-docs');
+    })
+        ->middleware(['auth', 'role:super_admin'])
+        ->name('dev.api-docs');
+
+    Route::get('/dev/openapi.yaml', function () {
+        $path = base_path('docs/api-v1-openapi.yaml');
+        if (! file_exists($path)) {
+            abort(404);
+        }
+        return response(file_get_contents($path), 200, [
+            'Content-Type' => 'text/yaml',
+        ]);
+    })
+        ->middleware(['auth', 'role:super_admin'])
+        ->name('dev.openapi-yaml');
 }
