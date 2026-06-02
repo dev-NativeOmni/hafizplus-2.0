@@ -38,32 +38,46 @@ class QuranPdfTest extends TestCase
         $response->assertSee('Mushaf Al-Qur\'an Digital');
     }
 
-    public function test_non_admin_cannot_upload_quran_pdf(): void
+    public function test_non_admin_cannot_save_drive_config(): void
     {
         $studentUser = User::where('username', 'santri')->first();
-        $file = \Illuminate\Http\UploadedFile::fake()->create('custom_quran.pdf', 500, 'application/pdf');
 
-        $response = $this->actingAs($studentUser)->post(route('quran.pdf.upload'), [
-            'pdf_file' => $file,
+        $response = $this->actingAs($studentUser)->post(route('quran.pdf.config'), [
+            'drive_link' => 'https://drive.google.com/file/d/1234567890abcdefghijklmnopqrstuv/view?usp=sharing',
         ]);
 
         $response->assertStatus(403);
     }
 
-    public function test_admin_can_upload_quran_pdf(): void
+    public function test_admin_can_save_drive_config(): void
     {
         $superAdmin = User::where('username', 'superadmin')->first();
-        $file = \Illuminate\Http\UploadedFile::fake()->create('custom_quran.pdf', 500, 'application/pdf');
+        $configPath = storage_path('app/quran_settings.json');
 
-        $response = $this->actingAs($superAdmin)->post(route('quran.pdf.upload'), [
-            'pdf_file' => $file,
+        // Backup existing config if any
+        $backup = null;
+        if (file_exists($configPath)) {
+            $backup = file_get_contents($configPath);
+            unlink($configPath);
+        }
+
+        $response = $this->actingAs($superAdmin)->post(route('quran.pdf.config'), [
+            'drive_link' => 'https://drive.google.com/file/d/1234567890abcdefghijklmnopqrstuv/view?usp=sharing',
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        $this->assertFileExists(public_path('pdf/quran.pdf'));
+        $this->assertFileExists($configPath);
+        $config = json_decode(file_get_contents($configPath), true);
+        $this->assertEquals('1234567890abcdefghijklmnopqrstuv', $config['google_drive_id']);
+        $this->assertEquals('https://drive.google.com/file/d/1234567890abcdefghijklmnopqrstuv/view?usp=sharing', $config['google_drive_link']);
 
-        @unlink(public_path('pdf/quran.pdf'));
+        // Restore backup
+        if ($backup !== null) {
+            file_put_contents($configPath, $backup);
+        } else {
+            unlink($configPath);
+        }
     }
 }

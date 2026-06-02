@@ -11,27 +11,49 @@ class QuranPdfController extends Controller
 {
     public function index(): View
     {
-        return view('quran.pdf');
+        $config = [];
+        $configPath = storage_path('app/quran_settings.json');
+        if (File::exists($configPath)) {
+            $config = json_decode(File::get($configPath), true) ?? [];
+        }
+
+        return view('quran.pdf', compact('config'));
     }
 
-    public function upload(Request $request): RedirectResponse
+    public function updateConfig(Request $request): RedirectResponse
     {
         $request->validate([
-            'pdf_file' => 'required|file|mimes:pdf|max:51200', // max 50MB
+            'drive_link' => 'required|string',
         ]);
 
-        $file = $request->file('pdf_file');
+        $link = $request->input('drive_link');
+        $fileId = null;
+
+        // Parse File ID from Google Drive URL
+        if (preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $link, $matches)) {
+            $fileId = $matches[1];
+        } elseif (preg_match('/id=([a-zA-Z0-9_-]+)/', $link, $matches)) {
+            $fileId = $matches[1];
+        } else {
+            // Assume the input itself is the ID if no match is found
+            $fileId = trim($link);
+        }
+
+        if (empty($fileId)) {
+            return back()->with('error', 'Format Link Google Drive tidak dikenali.');
+        }
 
         try {
-            // Ensure directory exists
-            File::ensureDirectoryExists(public_path('pdf'));
+            $configPath = storage_path('app/quran_settings.json');
+            File::ensureDirectoryExists(storage_path('app'));
+            File::put($configPath, json_encode([
+                'google_drive_id' => $fileId,
+                'google_drive_link' => $link,
+            ]));
 
-            // Move the file
-            $file->move(public_path('pdf'), 'quran.pdf');
-
-            return back()->with('success', 'Mushaf PDF berhasil diunggah dan disimpan secara lokal.');
+            return back()->with('success', 'Mushaf Google Drive berhasil dihubungkan.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal mengunggah file: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menyimpan konfigurasi: ' . $e->getMessage());
         }
     }
 }

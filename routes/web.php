@@ -209,9 +209,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/quran-pdf', [QuranPdfController::class, 'index'])
         ->name('quran.pdf');
 
-    Route::post('/quran-pdf/upload', [QuranPdfController::class, 'upload'])
+    Route::post('/quran-pdf/config', [QuranPdfController::class, 'updateConfig'])
         ->middleware('role:super_admin,admin')
-        ->name('quran.pdf.upload');
+        ->name('quran.pdf.config');
 });
 
 require __DIR__ . '/auth.php';
