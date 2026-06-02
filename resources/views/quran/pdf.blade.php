@@ -12,7 +12,7 @@
     @endphp
 
     <div class="py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8 space-y-6 w-full">
 
             <!-- Alert Messages with Micro-Animations -->
             @if (session('success'))
@@ -221,9 +221,10 @@
                     </div>
 
                     <!-- Responsive Iframe Wrapper with elegant loading backdrop -->
-                    <div class="relative w-full h-[78vh] bg-gray-150 dark:bg-gray-900">
+                    <div class="relative w-full bg-gray-150 dark:bg-gray-900 shadow-inner rounded-xl overflow-hidden" style="height: 82vh; min-height: 750px;">
                         <iframe src="https://drive.google.com/file/d/{{ $driveId }}/preview" 
-                                class="w-full h-full border-0 shadow-inner" 
+                                class="w-full h-full border-0" 
+                                style="height: 82vh; min-height: 750px;"
                                 allow="autoplay"
                                 loading="lazy"></iframe>
                     </div>
