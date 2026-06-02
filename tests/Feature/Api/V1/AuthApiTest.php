@@ -25,7 +25,7 @@ class AuthApiTest extends TestCase
     public function test_user_can_login_with_valid_credentials(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'superadmin@hafizplus.test',
+            'username' => 'superadmin',
             'password' => 'password123',
             'device_name' => 'Test Device',
         ]);
@@ -42,7 +42,7 @@ class AuthApiTest extends TestCase
                     'user' => [
                         'id',
                         'name',
-                        'email',
+                        'username',
                         'status',
                         'role' => [
                             'id',
@@ -60,7 +60,7 @@ class AuthApiTest extends TestCase
     public function test_user_cannot_login_with_invalid_password(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'superadmin@hafizplus.test',
+            'username' => 'superadmin',
             'password' => 'wrongpassword',
         ]);
 
@@ -73,11 +73,11 @@ class AuthApiTest extends TestCase
 
     public function test_inactive_user_cannot_login(): void
     {
-        $inactiveUser = User::where('email', 'superadmin@hafizplus.test')->first();
+        $inactiveUser = User::where('username', 'superadmin')->first();
         $inactiveUser->update(['status' => 'inactive']);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'superadmin@hafizplus.test',
+            'username' => 'superadmin',
             'password' => 'password123',
         ]);
 
@@ -90,7 +90,7 @@ class AuthApiTest extends TestCase
 
     public function test_authenticated_user_can_get_profile(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -102,7 +102,7 @@ class AuthApiTest extends TestCase
                 'success' => true,
                 'data' => [
                     'user' => [
-                        'email' => 'superadmin@hafizplus.test',
+                        'username' => 'superadmin',
                     ],
                 ],
             ]);
@@ -117,7 +117,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_logout(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -135,7 +135,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_logout_all_devices(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $user->createToken('Device 1');
         $user->createToken('Device 2');
         $token = $user->createToken('Device 3')->plainTextToken;
@@ -155,7 +155,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_list_active_tokens(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $user->createToken('Device A');
         $token = $user->createToken('Device B')->plainTextToken;
 
@@ -189,7 +189,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_logout_other_devices(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $user->createToken('Device A');
         $user->createToken('Device B');
         $token = $user->createToken('Device C')->plainTextToken;
@@ -212,7 +212,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_revoke_specific_token(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $targetToken = $user->createToken('Device target');
         $token = $user->createToken('Device active')->plainTextToken;
 
@@ -231,7 +231,7 @@ class AuthApiTest extends TestCase
 
     public function test_user_cannot_revoke_non_existing_token(): void
     {
-        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user = User::where('username', 'superadmin')->first();
         $token = $user->createToken('Device active')->plainTextToken;
 
         $response = $this->withHeaders([

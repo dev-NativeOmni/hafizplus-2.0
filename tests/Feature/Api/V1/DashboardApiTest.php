@@ -26,7 +26,7 @@ class DashboardApiTest extends TestCase
 
     public function test_admin_dashboard_can_be_accessed_by_admin(): void
     {
-        $user = User::where('email', 'admin@hafizplus.test')->first();
+        $user = User::where('username', 'admin')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -46,7 +46,7 @@ class DashboardApiTest extends TestCase
 
     public function test_admin_dashboard_cannot_be_accessed_by_teacher(): void
     {
-        $user = User::where('email', 'guru@hafizplus.test')->first();
+        $user = User::where('username', 'guru')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -58,7 +58,7 @@ class DashboardApiTest extends TestCase
 
     public function test_teacher_dashboard_can_be_accessed_by_teacher(): void
     {
-        $user = User::where('email', 'guru@hafizplus.test')->first();
+        $user = User::where('username', 'guru')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -78,7 +78,7 @@ class DashboardApiTest extends TestCase
 
     public function test_teacher_dashboard_cannot_be_accessed_by_parent(): void
     {
-        $user = User::where('email', 'orangtua@hafizplus.test')->first();
+        $user = User::where('username', 'orangtua')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -90,7 +90,7 @@ class DashboardApiTest extends TestCase
 
     public function test_parent_dashboard_can_be_accessed_by_parent(): void
     {
-        $user = User::where('email', 'orangtua@hafizplus.test')->first();
+        $user = User::where('username', 'orangtua')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -110,7 +110,7 @@ class DashboardApiTest extends TestCase
 
     public function test_parent_dashboard_cannot_be_accessed_by_student(): void
     {
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -122,7 +122,7 @@ class DashboardApiTest extends TestCase
 
     public function test_student_dashboard_can_be_accessed_by_student(): void
     {
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -142,7 +142,7 @@ class DashboardApiTest extends TestCase
 
     public function test_student_dashboard_cannot_be_accessed_by_admin(): void
     {
-        $user = User::where('email', 'admin@hafizplus.test')->first();
+        $user = User::where('username', 'admin')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([

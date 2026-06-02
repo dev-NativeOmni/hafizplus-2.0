@@ -50,7 +50,7 @@ class HafalanMurajaahApiTest extends TestCase
             'submitted_at' => now()->toDateString(),
         ]);
 
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -102,7 +102,7 @@ class HafalanMurajaahApiTest extends TestCase
             'reviewed_at' => now()->toDateString(),
         ]);
 
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -153,7 +153,7 @@ class HafalanMurajaahApiTest extends TestCase
             'status' => 'active',
         ]);
 
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([

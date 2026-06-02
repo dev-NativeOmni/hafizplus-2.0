@@ -26,7 +26,7 @@ class QuranApiTest extends TestCase
 
     public function test_user_can_list_surahs(): void
     {
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -51,7 +51,7 @@ class QuranApiTest extends TestCase
 
     public function test_user_can_get_surah_detail(): void
     {
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -72,7 +72,7 @@ class QuranApiTest extends TestCase
 
     public function test_user_can_get_ayahs_of_surah(): void
     {
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([

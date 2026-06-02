@@ -105,6 +105,12 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('class-rooms', ClassRoomController::class);
         Route::resource('teachers', TeacherController::class);
         Route::resource('parents', ParentController::class);
+        Route::get('students/export', [StudentController::class, 'export'])
+            ->middleware('role:super_admin')
+            ->name('students.export');
+        Route::post('students/import', [StudentController::class, 'import'])
+            ->middleware('role:super_admin')
+            ->name('students.import');
         Route::resource('students', StudentController::class);
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])

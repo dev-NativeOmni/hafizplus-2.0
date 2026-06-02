@@ -17,22 +17,22 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'email'],
+            'username' => ['required', 'string'],
             'password' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = User::query()
             ->with('role')
-            ->where('email', $validated['email'])
+            ->where('username', $validated['username'])
             ->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return ApiResponse::error(
-                message: 'Email atau password tidak valid.',
+                message: 'Username atau password tidak valid.',
                 errors: [
-                    'email' => [
-                        'Email atau password tidak valid.',
+                    'username' => [
+                        'Username atau password tidak valid.',
                     ],
                 ],
                 status: 401
@@ -267,7 +267,7 @@ class AuthController extends Controller
         return [
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
+            'username' => $user->username,
             'status' => $user->status ?? null,
             'role' => $user->role ? [
                 'id' => $user->role->id,

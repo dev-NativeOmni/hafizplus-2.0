@@ -33,7 +33,7 @@ class DevRoutesTest extends TestCase
 
     public function test_dev_routes_can_be_accessed_by_super_admin(): void
     {
-        $superAdmin = User::where('email', 'superadmin@hafizplus.test')->first();
+        $superAdmin = User::where('username', 'superadmin')->first();
 
         $responseDocs = $this->actingAs($superAdmin)->get('/dev/api-docs');
         $responseDocs->assertStatus(200);
@@ -45,7 +45,7 @@ class DevRoutesTest extends TestCase
 
     public function test_dev_routes_cannot_be_accessed_by_student(): void
     {
-        $student = User::where('email', 'santri@hafizplus.test')->first();
+        $student = User::where('username', 'santri')->first();
 
         $responseDocs = $this->actingAs($student)->get('/dev/api-docs');
         $responseDocs->assertStatus(403);

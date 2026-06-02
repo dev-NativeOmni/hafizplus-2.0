@@ -31,7 +31,7 @@ class StudentApiTest extends TestCase
 
     public function test_admin_can_list_all_students(): void
     {
-        $user = User::where('email', 'admin@hafizplus.test')->first();
+        $user = User::where('username', 'admin')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -55,7 +55,7 @@ class StudentApiTest extends TestCase
         // guru@hafizplus.test has Student SNT-001 guided.
         // Let's create another student not guided by this teacher to test filtering.
         $teacher2User = User::factory()->create([
-            'role_id' => User::where('email', 'guru@hafizplus.test')->first()->role_id,
+            'role_id' => User::where('username', 'guru')->first()->role_id,
             'status' => 'active',
         ]);
         $teacher2Profile = TeacherProfile::create([
@@ -64,7 +64,7 @@ class StudentApiTest extends TestCase
         ]);
 
         $student2User = User::factory()->create([
-            'role_id' => User::where('email', 'santri@hafizplus.test')->first()->role_id,
+            'role_id' => User::where('username', 'santri')->first()->role_id,
             'status' => 'active',
         ]);
         
@@ -80,7 +80,7 @@ class StudentApiTest extends TestCase
             'status' => 'active',
         ]);
 
-        $teacherUser = User::where('email', 'guru@hafizplus.test')->first();
+        $teacherUser = User::where('username', 'guru')->first();
         $token = $teacherUser->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -97,7 +97,7 @@ class StudentApiTest extends TestCase
         // orangtua@hafizplus.test has Student SNT-001 connected.
         // Let's create another student not connected.
         $student2User = User::factory()->create([
-            'role_id' => User::where('email', 'santri@hafizplus.test')->first()->role_id,
+            'role_id' => User::where('username', 'santri')->first()->role_id,
             'status' => 'active',
         ]);
         
@@ -114,7 +114,7 @@ class StudentApiTest extends TestCase
             'status' => 'active',
         ]);
 
-        $parentUser = User::where('email', 'orangtua@hafizplus.test')->first();
+        $parentUser = User::where('username', 'orangtua')->first();
         $token = $parentUser->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -128,7 +128,7 @@ class StudentApiTest extends TestCase
 
     public function test_student_can_list_only_themselves(): void
     {
-        $studentUser = User::where('email', 'santri@hafizplus.test')->first();
+        $studentUser = User::where('username', 'santri')->first();
         $token = $studentUser->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -143,7 +143,7 @@ class StudentApiTest extends TestCase
     public function test_user_can_get_student_detail(): void
     {
         $student = Student::first();
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -164,7 +164,7 @@ class StudentApiTest extends TestCase
     public function test_user_can_get_student_progress(): void
     {
         $student = Student::first();
-        $user = User::where('email', 'santri@hafizplus.test')->first();
+        $user = User::where('username', 'santri')->first();
         $token = $user->createToken('Test')->plainTextToken;
 
         $response = $this->withHeaders([
