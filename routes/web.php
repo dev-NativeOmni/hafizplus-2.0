@@ -204,6 +204,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
+
+    Route::get('/quran-pdf', function () {
+        return view('quran.pdf');
+    })->name('quran.pdf');
 });
 
 require __DIR__ . '/auth.php';
