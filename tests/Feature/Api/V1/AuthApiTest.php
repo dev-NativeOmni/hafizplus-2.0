@@ -152,4 +152,96 @@ class AuthApiTest extends TestCase
 
         $this->assertCount(0, $user->fresh()->tokens);
     }
+
+    public function test_user_can_list_active_tokens(): void
+    {
+        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user->createToken('Device A');
+        $token = $user->createToken('Device B')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/api/v1/auth/tokens');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'tokens' => [
+                        '*' => [
+                            'id',
+                            'name',
+                            'abilities',
+                            'is_current',
+                            'is_expired',
+                            'last_used_at',
+                            'expires_at',
+                            'created_at',
+                            'updated_at',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertCount(2, $response['data']['tokens']);
+    }
+
+    public function test_user_can_logout_other_devices(): void
+    {
+        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $user->createToken('Device A');
+        $user->createToken('Device B');
+        $token = $user->createToken('Device C')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/api/v1/auth/logout-other-devices');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Token device lain berhasil dicabut.',
+                'data' => [
+                    'revoked_tokens' => 2,
+                ],
+            ]);
+
+        $this->assertCount(1, $user->fresh()->tokens);
+    }
+
+    public function test_user_can_revoke_specific_token(): void
+    {
+        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $targetToken = $user->createToken('Device target');
+        $token = $user->createToken('Device active')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->deleteJson('/api/v1/auth/tokens/' . $targetToken->accessToken->id);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Token berhasil dicabut.',
+            ]);
+
+        $this->assertCount(1, $user->fresh()->tokens);
+    }
+
+    public function test_user_cannot_revoke_non_existing_token(): void
+    {
+        $user = User::where('email', 'superadmin@hafizplus.test')->first();
+        $token = $user->createToken('Device active')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->deleteJson('/api/v1/auth/tokens/9999');
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Token tidak ditemukan.',
+            ]);
+    }
 }

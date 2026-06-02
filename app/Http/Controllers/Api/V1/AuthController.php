@@ -116,6 +116,93 @@ class AuthController extends Controller
         );
     }
 
+    public function tokens(Request $request): JsonResponse
+    {
+        $currentToken = $request->user()->currentAccessToken();
+        
+        $tokens = $request->user()->tokens()->latest('id')->get()->map(function ($token) use ($currentToken) {
+            return [
+                'id' => $token->id,
+                'name' => $token->name ?? 'API Client',
+                'abilities' => $token->abilities,
+                'is_current' => $currentToken && $currentToken->id === $token->id,
+                'is_expired' => $token->expires_at ? $token->expires_at->isPast() : false,
+                'last_used_at' => $token->last_used_at ? $token->last_used_at->toISOString() : null,
+                'expires_at' => $token->expires_at ? $token->expires_at->toISOString() : null,
+                'created_at' => $token->created_at ? $token->created_at->toISOString() : null,
+                'updated_at' => $token->updated_at ? $token->updated_at->toISOString() : null,
+            ];
+        });
+
+        $maxActiveTokens = max(
+            1,
+            (int) config('hafizplus.api.max_active_tokens_per_user', 5)
+        );
+
+        $tokenExpirationDays = max(
+            1,
+            (int) config('hafizplus.api.token_expiration_days', 30)
+        );
+
+        return ApiResponse::success(
+            data: [
+                'tokens' => $tokens,
+            ],
+            message: 'Daftar token aktif berhasil diambil.',
+            meta: [
+                'total' => $tokens->count(),
+                'max_active_tokens' => $maxActiveTokens,
+                'token_expiration_days' => $tokenExpirationDays,
+            ]
+        );
+    }
+
+    public function logoutOtherDevices(Request $request): JsonResponse
+    {
+        $currentToken = $request->user()->currentAccessToken();
+        
+        if ($currentToken) {
+            $count = $request->user()->tokens()
+                ->where('id', '!=', $currentToken->id)
+                ->delete();
+        } else {
+            $count = 0;
+        }
+
+        return ApiResponse::success(
+            data: [
+                'revoked_tokens' => $count,
+            ],
+            message: 'Token device lain berhasil dicabut.'
+        );
+    }
+
+    public function revokeToken(Request $request, string $token): JsonResponse
+    {
+        if (! ctype_digit($token)) {
+            return ApiResponse::error(
+                message: 'Token tidak ditemukan.',
+                status: 404
+            );
+        }
+
+        $tokenModel = $request->user()->tokens()->find((int) $token);
+
+        if (! $tokenModel) {
+            return ApiResponse::error(
+                message: 'Token tidak ditemukan.',
+                status: 404
+            );
+        }
+
+        $tokenModel->delete();
+
+        return ApiResponse::success(
+            data: null,
+            message: 'Token berhasil dicabut.'
+        );
+    }
+
     private function applyTokenExpiration(NewAccessToken $newAccessToken, mixed $expiresAt): void
     {
         if (! Schema::hasColumn('personal_access_tokens', 'expires_at')) {

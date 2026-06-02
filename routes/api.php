@@ -39,11 +39,21 @@ Route::prefix('v1')
             Route::get('/auth/me', [AuthController::class, 'me'])
                 ->name('auth.me');
 
+            Route::get('/auth/tokens', [AuthController::class, 'tokens'])
+                ->name('auth.tokens');
+
             Route::post('/auth/logout', [AuthController::class, 'logout'])
                 ->name('auth.logout');
 
             Route::post('/auth/logout-all', [AuthController::class, 'logoutAll'])
                 ->name('auth.logout-all');
+
+            Route::post('/auth/logout-other-devices', [AuthController::class, 'logoutOtherDevices'])
+                ->name('auth.logout-other-devices');
+
+            Route::delete('/auth/tokens/{token}', [AuthController::class, 'revokeToken'])
+                ->whereNumber('token')
+                ->name('auth.tokens.destroy');
 
             /*
             |--------------------------------------------------------------------------
