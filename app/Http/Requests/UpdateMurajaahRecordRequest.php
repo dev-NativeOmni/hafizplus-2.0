@@ -14,6 +14,30 @@ class UpdateMurajaahRecordRequest extends FormRequest
         return $this->user()?->hasAnyRole(['super_admin', 'admin', 'teacher']) ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->user()?->hasRole('teacher')) {
+            $this->merge([
+                'teacher_id' => $this->user()->teacherProfile?->id,
+            ]);
+        }
+
+        if (
+            blank($this->input('overall_score'))
+            && filled($this->input('fluency_score'))
+            && filled($this->input('tajwid_score'))
+            && filled($this->input('makhraj_score'))
+        ) {
+            $this->merge([
+                'overall_score' => round((
+                    (float) $this->input('fluency_score')
+                    + (float) $this->input('tajwid_score')
+                    + (float) $this->input('makhraj_score')
+                ) / 3, 2),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -21,6 +45,12 @@ class UpdateMurajaahRecordRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('students', 'id')->whereNull('deleted_at'),
+            ],
+            'teacher_id' => [
+                Rule::requiredIf(! $this->user()?->hasRole('teacher')),
+                'nullable',
+                'integer',
+                Rule::exists('teacher_profiles', 'id'),
             ],
             'surah_id' => [
                 'required',

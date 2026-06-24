@@ -11,3 +11,9 @@ Artisan::command('inspire', function () {
 Schedule::command('notifications:generate')
     ->dailyAt('06:00')
     ->withoutOverlapping();
+
+// Sinkronisasi otomatis target hafalan: tandai 'completed' jika sudah ada
+// setoran hafalan lulus yang mencakup seluruh range ayat target.
+Schedule::command('hafizplus:sync-completed-targets')
+    ->dailyAt('01:00')
+    ->withoutOverlapping();

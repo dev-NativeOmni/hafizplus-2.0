@@ -13,15 +13,20 @@ class AuditLog extends Model
 
     protected $fillable = [
         'user_id',
+        'user_name',
+        'role_name',
+        'action',
         'auditable_type',
         'auditable_id',
         'auditable_label',
-        'event',
+        'auditable_name',
+        'description',
         'old_values',
         'new_values',
-        'url',
         'ip_address',
         'user_agent',
+        'url',
+        'method',
     ];
 
     protected function casts(): array
@@ -42,26 +47,26 @@ class AuditLog extends Model
         return $this->morphTo();
     }
 
-    public function getEventLabelAttribute(): string
+    public function getActionLabelAttribute(): string
     {
-        return match ($this->event) {
+        return match ($this->action) {
             'created' => 'Dibuat',
             'updated' => 'Diubah',
             'deleted' => 'Dihapus',
             'restored' => 'Dipulihkan',
             'force_deleted' => 'Dihapus Permanen',
-            default => ucfirst((string) $this->event),
+            default => ucfirst((string) $this->action),
         };
     }
 
-    public function getActionAttribute(): ?string
+    public function getEventAttribute(): ?string
     {
-        return $this->event;
+        return $this->action;
     }
 
-    public function getActionLabelAttribute(): string
+    public function getEventLabelAttribute(): string
     {
-        return $this->event_label;
+        return $this->action_label;
     }
 
     public function getAuditableNameAttribute(): string

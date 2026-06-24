@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreHafalanRecordRequest;
+use App\Http\Requests\UpdateHafalanRecordRequest;
 use App\Models\HafalanRecord;
 use App\Models\Student;
 use App\Models\Surah;
@@ -9,8 +11,6 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class HafalanRecordController extends Controller
@@ -25,7 +25,7 @@ class HafalanRecordController extends Controller
                 'teacher.user',
                 'surah',
             ])
-            ->when($this->userHasRole($user, 'teacher'), function ($query) use ($user) {
+            ->when($user->hasRole('teacher'), function ($query) use ($user) {
                 $query->where('teacher_id', $user->teacherProfile?->id);
             })
             ->when($request->filled('student_id'), function ($query) use ($request) {
@@ -55,11 +55,11 @@ class HafalanRecordController extends Controller
         return view('hafalan-records.create', $this->formData($request->user()));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreHafalanRecordRequest $request): RedirectResponse
     {
-        $validated = $this->validatedData($request);
+        $this->authorize('create', HafalanRecord::class);
 
-        HafalanRecord::query()->create($validated);
+        HafalanRecord::query()->create($request->validated());
 
         return redirect()
             ->route('hafalan-records.index')
@@ -68,6 +68,8 @@ class HafalanRecordController extends Controller
 
     public function show(HafalanRecord $hafalanRecord): View
     {
+        $this->authorize('view', $hafalanRecord);
+
         $hafalanRecord->load([
             'student.classRoom.program',
             'teacher.user',
@@ -81,7 +83,7 @@ class HafalanRecordController extends Controller
 
     public function edit(Request $request, HafalanRecord $hafalanRecord): View
     {
-        $this->authorizeTeacherRecord($request, $hafalanRecord);
+        $this->authorize('update', $hafalanRecord);
 
         return view('hafalan-records.edit', array_merge(
             [
@@ -91,104 +93,26 @@ class HafalanRecordController extends Controller
         ));
     }
 
-    public function update(Request $request, HafalanRecord $hafalanRecord): RedirectResponse
+    public function update(UpdateHafalanRecordRequest $request, HafalanRecord $hafalanRecord): RedirectResponse
     {
-        $this->authorizeTeacherRecord($request, $hafalanRecord);
+        $this->authorize('update', $hafalanRecord);
 
-        $validated = $this->validatedData($request);
-
-        $hafalanRecord->update($validated);
+        $hafalanRecord->update($request->validated());
 
         return redirect()
             ->route('hafalan-records.index')
             ->with('success', 'Data hafalan berhasil diperbarui.');
     }
 
-    public function destroy(Request $request, HafalanRecord $hafalanRecord): RedirectResponse
+    public function destroy(HafalanRecord $hafalanRecord): RedirectResponse
     {
-        $this->authorizeTeacherRecord($request, $hafalanRecord);
+        $this->authorize('delete', $hafalanRecord);
 
         $hafalanRecord->delete();
 
         return redirect()
             ->route('hafalan-records.index')
             ->with('success', 'Data hafalan berhasil dihapus.');
-    }
-
-    private function validatedData(Request $request): array
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'student_id' => [
-                'required',
-                'integer',
-                Rule::exists('students', 'id')->whereNull('deleted_at'),
-            ],
-            'teacher_id' => [
-                Rule::requiredIf(! $this->userHasRole($user, 'teacher')),
-                'nullable',
-                'integer',
-                Rule::exists('teacher_profiles', 'id'),
-            ],
-            'surah_id' => [
-                'required',
-                'integer',
-                Rule::exists('surahs', 'id'),
-            ],
-            'ayah_start' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'ayah_end' => [
-                'required',
-                'integer',
-                'min:1',
-                'gte:ayah_start',
-            ],
-            'submission_type' => [
-                'required',
-                Rule::in(['new', 'continue', 'revision']),
-            ],
-            'score' => [
-                'nullable',
-                'numeric',
-                'min:0',
-                'max:100',
-            ],
-            'status' => [
-                'required',
-                Rule::in(['passed', 'repeat', 'needs_improvement']),
-            ],
-            'notes' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-            'submitted_at' => [
-                'required',
-                'date',
-            ],
-        ]);
-
-        $teacherId = $this->resolveTeacherId($request);
-        $student = Student::query()->findOrFail((int) $validated['student_id']);
-        $surah = Surah::query()->findOrFail((int) $validated['surah_id']);
-
-        if ($this->userHasRole($user, 'teacher') && (int) $student->teacher_id !== (int) $teacherId) {
-            abort(403, 'Santri ini bukan bimbingan guru yang sedang login.');
-        }
-
-        if ((int) $validated['ayah_end'] > (int) $surah->total_ayah) {
-            throw ValidationException::withMessages([
-                'ayah_end' => 'Ayat akhir tidak boleh melebihi total ayat surah ' . $surah->name_latin . '.',
-            ]);
-        }
-
-        $validated['teacher_id'] = $teacherId;
-
-        return $validated;
     }
 
     private function formData(User $user): array
@@ -199,7 +123,7 @@ class HafalanRecordController extends Controller
                 'teacher.user',
             ])
             ->where('status', 'active')
-            ->when($this->userHasRole($user, 'teacher'), function ($query) use ($user) {
+            ->when($user->hasRole('teacher'), function ($query) use ($user) {
                 $query->where('teacher_id', $user->teacherProfile?->id);
             })
             ->orderBy('name')
@@ -223,42 +147,5 @@ class HafalanRecordController extends Controller
             'teachers' => $teachers,
             'surahs' => $surahs,
         ];
-    }
-
-    private function resolveTeacherId(Request $request): int
-    {
-        $user = $request->user();
-
-        if ($this->userHasRole($user, 'teacher')) {
-            $teacherId = $user->teacherProfile?->id;
-
-            if (! $teacherId) {
-                abort(403, 'Akun guru belum memiliki teacher profile.');
-            }
-
-            return (int) $teacherId;
-        }
-
-        return (int) $request->integer('teacher_id');
-    }
-
-    private function authorizeTeacherRecord(Request $request, HafalanRecord $hafalanRecord): void
-    {
-        $user = $request->user();
-
-        if ($this->userHasRole($user, 'teacher') && (int) $hafalanRecord->teacher_id !== (int) $user->teacherProfile?->id) {
-            abort(403);
-        }
-    }
-
-    private function userHasRole(?User $user, string|array $roles): bool
-    {
-        foreach ((array) $roles as $role) {
-            if ($user?->hasRole($role)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

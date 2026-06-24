@@ -32,6 +32,12 @@
     if ($user && method_exists($user, 'unreadSystemNotifications')) {
         $unreadNotificationCount = $user->unreadSystemNotifications()->count();
     }
+
+    // Variabel aktif untuk kelompok menu dropdown
+    $dataMasterActive = request()->routeIs('programs.*') || request()->routeIs('class-rooms.*') || request()->routeIs('teachers.*') || request()->routeIs('parents.*') || request()->routeIs('students.*');
+    $setoranActive = request()->routeIs('quick-inputs.*') || request()->routeIs('hafalan-records.*') || request()->routeIs('murajaah-records.*') || request()->routeIs('hafalan-targets.*');
+    $laporanActive = request()->routeIs('progress.*') || request()->routeIs('reports.*');
+    $systemActive = request()->routeIs('system-notifications.*') || request()->routeIs('audit-logs.*') || request()->routeIs('dev.api-tester');
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
@@ -49,94 +55,151 @@
                         Dashboard
                     </x-nav-link>
 
+                    {{-- Dropdown Data Master --}}
                     @if ($isAdmin)
-                        @if ($hasRoute('programs.index'))
-                            <x-nav-link :href="route('programs.index')" :active="request()->routeIs('programs.*')">
-                                Program
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('class-rooms.index'))
-                            <x-nav-link :href="route('class-rooms.index')" :active="request()->routeIs('class-rooms.*')">
-                                Kelas
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('teachers.index'))
-                            <x-nav-link :href="route('teachers.index')" :active="request()->routeIs('teachers.*')">
-                                Guru
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('parents.index'))
-                            <x-nav-link :href="route('parents.index')" :active="request()->routeIs('parents.*')">
-                                Orangtua
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('students.index'))
-                            <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">
-                                Santri
-                            </x-nav-link>
-                        @endif
+                        <div class="inline-flex items-center">
+                            <x-dropdown align="left" width="48">
+                                <x-slot name="trigger">
+                                    <button class="inline-flex items-center h-16 px-1 pt-1 border-b-2 {{ $dataMasterActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                                        <span>Data Master</span>
+                                        <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </x-slot>
+                                <x-slot name="content">
+                                    @if ($hasRoute('programs.index'))
+                                        <x-dropdown-link :href="route('programs.index')">
+                                            Program
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('class-rooms.index'))
+                                        <x-dropdown-link :href="route('class-rooms.index')">
+                                            Kelas
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('teachers.index'))
+                                        <x-dropdown-link :href="route('teachers.index')">
+                                            Guru
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('parents.index'))
+                                        <x-dropdown-link :href="route('parents.index')">
+                                            Orangtua
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('students.index'))
+                                        <x-dropdown-link :href="route('students.index')">
+                                            Santri
+                                        </x-dropdown-link>
+                                    @endif
+                                </x-slot>
+                            </x-dropdown>
+                        </div>
                     @endif
 
+                    {{-- Dropdown Setoran & Target --}}
                     @if ($canManageRecords)
-                        @if ($hasRoute('quick-inputs.index'))
-                            <x-nav-link :href="route('quick-inputs.index')" :active="request()->routeIs('quick-inputs.*')">
-                                Input Cepat
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('hafalan-records.index'))
-                            <x-nav-link :href="route('hafalan-records.index')" :active="request()->routeIs('hafalan-records.*')">
-                                Hafalan
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('murajaah-records.index'))
-                            <x-nav-link :href="route('murajaah-records.index')" :active="request()->routeIs('murajaah-records.*')">
-                                Murajaah
-                            </x-nav-link>
-                        @endif
-
-                        @if ($hasRoute('hafalan-targets.index'))
-                            <x-nav-link :href="route('hafalan-targets.index')" :active="request()->routeIs('hafalan-targets.*')">
-                                Target
-                            </x-nav-link>
-                        @endif
+                        <div class="inline-flex items-center">
+                            <x-dropdown align="left" width="48">
+                                <x-slot name="trigger">
+                                    <button class="inline-flex items-center h-16 px-1 pt-1 border-b-2 {{ $setoranActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                                        <span>Setoran & Target</span>
+                                        <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </x-slot>
+                                <x-slot name="content">
+                                    @if ($hasRoute('quick-inputs.index'))
+                                        <x-dropdown-link :href="route('quick-inputs.index')">
+                                            Input Cepat
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('hafalan-records.index'))
+                                        <x-dropdown-link :href="route('hafalan-records.index')">
+                                            Hafalan
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('murajaah-records.index'))
+                                        <x-dropdown-link :href="route('murajaah-records.index')">
+                                            Murajaah
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($hasRoute('hafalan-targets.index'))
+                                        <x-dropdown-link :href="route('hafalan-targets.index')">
+                                            Target
+                                        </x-dropdown-link>
+                                    @endif
+                                </x-slot>
+                            </x-dropdown>
+                        </div>
                     @endif
 
-                    @if ($canViewProgress && $hasRoute('progress.index'))
-                        <x-nav-link :href="route('progress.index')" :active="request()->routeIs('progress.*')">
-                            Progress
-                        </x-nav-link>
+                    {{-- Dropdown Progress & Laporan --}}
+                    @if (($canViewProgress && $hasRoute('progress.index')) || ($canViewReports && $hasRoute('reports.index')))
+                        <div class="inline-flex items-center">
+                            <x-dropdown align="left" width="48">
+                                <x-slot name="trigger">
+                                    <button class="inline-flex items-center h-16 px-1 pt-1 border-b-2 {{ $laporanActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                                        <span>Progres & Laporan</span>
+                                        <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </x-slot>
+                                <x-slot name="content">
+                                    @if ($canViewProgress && $hasRoute('progress.index'))
+                                        <x-dropdown-link :href="route('progress.index')">
+                                            Progress
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($canViewReports && $hasRoute('reports.index'))
+                                        <x-dropdown-link :href="route('reports.index')">
+                                            Laporan
+                                        </x-dropdown-link>
+                                    @endif
+                                </x-slot>
+                            </x-dropdown>
+                        </div>
                     @endif
 
-                    @if ($canViewReports && $hasRoute('reports.index'))
-                        <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
-                            Laporan
-                        </x-nav-link>
-                    @endif
-
-                    @if ($hasRoute('system-notifications.index'))
-                        <x-nav-link :href="route('system-notifications.index')" :active="request()->routeIs('system-notifications.*')">
-                            <span class="inline-flex items-center gap-1">
-                                Notifikasi
-
-                                @if ($unreadNotificationCount > 0)
-                                    <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
-                                        {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
-                                    </span>
-                                @endif
-                            </span>
-                        </x-nav-link>
-                    @endif
-
-                    @if ($canViewAudit && $hasRoute('audit-logs.index'))
-                        <x-nav-link :href="route('audit-logs.index')" :active="request()->routeIs('audit-logs.*')">
-                            Audit
-                        </x-nav-link>
+                    {{-- Dropdown Sistem & Log --}}
+                    @if ($hasRoute('system-notifications.index') || ($canViewAudit && $hasRoute('audit-logs.index')) || ($isSuperAdmin && app()->environment('local') && $hasRoute('dev.api-tester')))
+                        <div class="inline-flex items-center">
+                            <x-dropdown align="left" width="48">
+                                <x-slot name="trigger">
+                                    <button class="inline-flex items-center h-16 px-1 pt-1 border-b-2 {{ $systemActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                                        <span>Sistem & Log</span>
+                                        @if ($unreadNotificationCount > 0)
+                                            <span class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ms-1">
+                                                {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+                                            </span>
+                                        @endif
+                                        <svg class="ms-1 h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </x-slot>
+                                <x-slot name="content">
+                                    @if ($hasRoute('system-notifications.index'))
+                                        <x-dropdown-link :href="route('system-notifications.index')">
+                                            Notifikasi
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($canViewAudit && $hasRoute('audit-logs.index'))
+                                        <x-dropdown-link :href="route('audit-logs.index')">
+                                            Audit Log
+                                        </x-dropdown-link>
+                                    @endif
+                                    @if ($isSuperAdmin && app()->environment('local') && $hasRoute('dev.api-tester'))
+                                        <x-dropdown-link :href="route('dev.api-tester')">
+                                            Dev API Tester
+                                        </x-dropdown-link>
+                                    @endif
+                                </x-slot>
+                            </x-dropdown>
+                        </div>
                     @endif
                 </div>
             </div>

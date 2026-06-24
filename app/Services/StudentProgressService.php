@@ -12,7 +12,7 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
+
 
 class StudentProgressService
 {
@@ -36,43 +36,8 @@ class StudentProgressService
                 return $query->whereRaw('1 = 0');
             }
 
-            $hasConstraint = false;
-
-            $query->where(function (Builder $studentQuery) use ($teacherId, &$hasConstraint) {
-                if (Schema::hasColumn('students', 'teacher_id')) {
-                    $hasConstraint = true;
-                    $studentQuery->orWhere('teacher_id', $teacherId);
-                }
-
-                if (Schema::hasColumn('students', 'teacher_profile_id')) {
-                    $hasConstraint = true;
-                    $studentQuery->orWhere('teacher_profile_id', $teacherId);
-                }
-
-                if (
-                    Schema::hasTable('class_rooms')
-                    && (
-                        Schema::hasColumn('class_rooms', 'teacher_id')
-                        || Schema::hasColumn('class_rooms', 'teacher_profile_id')
-                    )
-                ) {
-                    $hasConstraint = true;
-
-                    $studentQuery->orWhereHas('classRoom', function (Builder $classRoomQuery) use ($teacherId) {
-                        $classRoomQuery->where(function (Builder $query) use ($teacherId) {
-                            if (Schema::hasColumn('class_rooms', 'teacher_id')) {
-                                $query->orWhere('teacher_id', $teacherId);
-                            }
-
-                            if (Schema::hasColumn('class_rooms', 'teacher_profile_id')) {
-                                $query->orWhere('teacher_profile_id', $teacherId);
-                            }
-                        });
-                    });
-                }
-            });
-
-            return $hasConstraint ? $query : Student::query()->whereRaw('1 = 0');
+            // students.teacher_id selalu ada (confirmed dari migration)
+            return $query->where('teacher_id', $teacherId);
         }
 
         if ($this->userHasAnyRole($user, ['parent'])) {
@@ -83,30 +48,16 @@ class StudentProgressService
                 return $query->whereRaw('1 = 0');
             }
 
-            if (Schema::hasTable('parent_student')) {
-                return $query->whereIn('id', function ($subQuery) use ($parentId) {
-                    $subQuery->select('student_id')
-                        ->from('parent_student')
-                        ->where('parent_id', $parentId);
-                });
-            }
-
-            if (Schema::hasColumn('students', 'parent_id')) {
-                return $query->where('parent_id', $parentId);
-            }
-
-            if (Schema::hasColumn('students', 'parent_profile_id')) {
-                return $query->where('parent_profile_id', $parentId);
-            }
-
-            return $query->whereRaw('1 = 0');
+            // Relasi parent-student via pivot table parent_student (confirmed dari migration)
+            return $query->whereIn('id', function ($subQuery) use ($parentId) {
+                $subQuery->select('student_id')
+                    ->from('parent_student')
+                    ->where('parent_id', $parentId);
+            });
         }
 
         if ($this->userHasAnyRole($user, ['student'])) {
-            if (! Schema::hasColumn('students', 'user_id')) {
-                return $query->whereRaw('1 = 0');
-            }
-
+            // students.user_id selalu ada (confirmed dari migration)
             return $query->where('user_id', $user->id);
         }
 
@@ -306,45 +257,10 @@ class StudentProgressService
 
     private function averageMurajaahScore(Student $student): float
     {
-        if (Schema::hasColumn('murajaah_records', 'overall_score')) {
-            return round((float) MurajaahRecord::query()
-                ->where('student_id', $student->id)
-                ->avg('overall_score'), 2);
-        }
-
-        $scoreColumns = collect([
-            'fluency_score',
-            'tajwid_score',
-            'makhraj_score',
-        ])->filter(fn (string $column) => Schema::hasColumn('murajaah_records', $column));
-
-        if ($scoreColumns->isEmpty()) {
-            return 0;
-        }
-
-        $records = MurajaahRecord::query()
+        // murajaah_records.overall_score selalu ada (confirmed dari migration)
+        return round((float) MurajaahRecord::query()
             ->where('student_id', $student->id)
-            ->get($scoreColumns->all());
-
-        if ($records->isEmpty()) {
-            return 0;
-        }
-
-        $averages = $records
-            ->map(function ($record) use ($scoreColumns) {
-                $scores = $scoreColumns
-                    ->map(fn (string $column) => $record->{$column})
-                    ->filter(fn ($value) => $value !== null);
-
-                return $scores->isNotEmpty()
-                    ? $scores->avg()
-                    : null;
-            })
-            ->filter(fn ($value) => $value !== null);
-
-        return $averages->isNotEmpty()
-            ? round((float) $averages->avg(), 2)
-            : 0;
+            ->avg('overall_score'), 2);
     }
 
     private function totalQuranAyahs(): int

@@ -58,7 +58,7 @@ class ReportController extends Controller
                 ->count(),
 
             'passed_murajaah' => (clone $murajaahQuery)
-                ->whereIn('status', ['passed', 'good'])
+                ->where('status', 'passed')
                 ->count(),
 
             'repeat_murajaah' => (clone $murajaahQuery)
@@ -152,6 +152,7 @@ class ReportController extends Controller
             ->where('student_id', $student->id)
             ->latest('submitted_at')
             ->latest()
+            ->limit(500)
             ->get();
 
         $murajaahRecords = MurajaahRecord::query()
@@ -159,6 +160,7 @@ class ReportController extends Controller
             ->where('student_id', $student->id)
             ->latest('reviewed_at')
             ->latest()
+            ->limit(500)
             ->get();
 
         $hafalanTargets = HafalanTarget::query()
@@ -205,21 +207,20 @@ class ReportController extends Controller
     {
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
-        $hafalanRecords = $this->filteredHafalanQuery($request, $visibleStudentIds)
+        $hafalanQuery = $this->filteredHafalanQuery($request, $visibleStudentIds)
             ->with(['student.classRoom.program', 'surah', 'teacher.user'])
             ->latest('submitted_at')
-            ->latest()
-            ->get();
+            ->latest();
 
-        $murajaahRecords = $this->filteredMurajaahQuery($request, $visibleStudentIds)
+        $murajaahQuery = $this->filteredMurajaahQuery($request, $visibleStudentIds)
             ->with(['student.classRoom.program', 'surah', 'teacher.user'])
             ->latest('reviewed_at')
-            ->latest()
-            ->get();
+            ->latest();
 
         $fileName = 'laporan-hafizplus-' . now()->format('Ymd-His') . '.csv';
 
-        return response()->streamDownload(function () use ($hafalanRecords, $murajaahRecords) {
+        // Gunakan cursor() agar hanya satu baris dimuat ke memory pada satu waktu.
+        return response()->streamDownload(function () use ($hafalanQuery, $murajaahQuery) {
             $handle = fopen('php://output', 'w');
 
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
@@ -239,7 +240,7 @@ class ReportController extends Controller
                 'Catatan',
             ]);
 
-            foreach ($hafalanRecords as $record) {
+            foreach ($hafalanQuery->cursor() as $record) {
                 fputcsv($handle, [
                     'Hafalan',
                     $record->student?->name,
@@ -256,7 +257,7 @@ class ReportController extends Controller
                 ]);
             }
 
-            foreach ($murajaahRecords as $record) {
+            foreach ($murajaahQuery->cursor() as $record) {
                 fputcsv($handle, [
                     'Murajaah',
                     $record->student?->name,

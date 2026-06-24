@@ -6,6 +6,7 @@ use App\Models\HafalanTarget;
 use App\Models\Student;
 use App\Models\Surah;
 use App\Models\User;
+use App\Services\StudentProgressService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,14 +97,12 @@ class HafalanTargetController extends Controller
         $students = Student::query()
             ->with(['classRoom.program'])
             ->whereIn('id', $visibleStudentIds)
-            ->when(Schema::hasColumn('students', 'status'), function ($query) {
-                $query->where('status', 'active');
-            })
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
+            ->orderBy('number')
             ->get();
 
         $statusOptions = $this->targetStatuses();
@@ -124,14 +123,12 @@ class HafalanTargetController extends Controller
         $students = Student::query()
             ->with(['classRoom.program'])
             ->whereIn('id', $visibleStudentIds)
-            ->when(Schema::hasColumn('students', 'status'), function ($query) {
-                $query->where('status', 'active');
-            })
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
+            ->orderBy('number')
             ->get();
 
         $statusOptions = $this->targetStatuses();
@@ -154,13 +151,7 @@ class HafalanTargetController extends Controller
         $data = $this->targetPayload($validated);
         $data['student_id'] = $student->id;
 
-        if (Schema::hasColumn('hafalan_targets', 'teacher_id')) {
-            $data['teacher_id'] = $this->resolveTeacherId($request, $student);
-        }
-
-        if (Schema::hasColumn('hafalan_targets', 'teacher_profile_id')) {
-            $data['teacher_profile_id'] = $this->resolveTeacherId($request, $student);
-        }
+        $data['teacher_id'] = $this->resolveTeacherId($request, $student);
 
         if (empty($data['status'])) {
             $data['status'] = $this->defaultOpenTargetStatus();
@@ -204,7 +195,7 @@ class HafalanTargetController extends Controller
             ->get();
 
         $surahs = Surah::query()
-            ->orderBy(Schema::hasColumn('surahs', 'number') ? 'number' : 'id')
+            ->orderBy('number')
             ->get();
 
         $statusOptions = $this->targetStatuses();
@@ -233,13 +224,7 @@ class HafalanTargetController extends Controller
         $data = $this->targetPayload($validated);
         $data['student_id'] = $student->id;
 
-        if (Schema::hasColumn('hafalan_targets', 'teacher_id')) {
-            $data['teacher_id'] = $this->resolveTeacherId($request, $student);
-        }
-
-        if (Schema::hasColumn('hafalan_targets', 'teacher_profile_id')) {
-            $data['teacher_profile_id'] = $this->resolveTeacherId($request, $student);
-        }
+        $data['teacher_id'] = $this->resolveTeacherId($request, $student);
 
         $hafalanTarget->update($data);
 
@@ -362,82 +347,10 @@ class HafalanTargetController extends Controller
             return collect();
         }
 
-        if ($user->hasAnyRole(['super_admin', 'admin'])) {
-            return Student::query()
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id);
-        }
-
-        if ($user->hasRole('teacher')) {
-            $teacherProfileId = $user->teacherProfile?->id;
-
-            if (! $teacherProfileId) {
-                return collect();
-            }
-
-            return Student::query()
-                ->where(function ($query) use ($teacherProfileId) {
-                    if (Schema::hasColumn('students', 'teacher_id')) {
-                        $query->orWhere('teacher_id', $teacherProfileId);
-                    }
-
-                    if (Schema::hasColumn('students', 'teacher_profile_id')) {
-                        $query->orWhere('teacher_profile_id', $teacherProfileId);
-                    }
-
-                    $query->orWhereHas('classRoom', function ($classRoomQuery) use ($teacherProfileId) {
-                        if (Schema::hasColumn('class_rooms', 'teacher_id')) {
-                            $classRoomQuery->where('teacher_id', $teacherProfileId);
-                        }
-
-                        if (Schema::hasColumn('class_rooms', 'teacher_profile_id')) {
-                            $classRoomQuery->orWhere('teacher_profile_id', $teacherProfileId);
-                        }
-                    });
-                })
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id);
-        }
-
-        if ($user->hasRole('parent')) {
-            $parentProfileId = $user->parentProfile?->id;
-
-            if (! $parentProfileId) {
-                return collect();
-            }
-
-            $query = Student::query();
-
-            if (Schema::hasTable('parent_student')) {
-                $query->whereHas('parents', function ($parentQuery) use ($parentProfileId) {
-                    $parentQuery->where('parent_profiles.id', $parentProfileId);
-                });
-            } elseif (Schema::hasColumn('students', 'parent_id')) {
-                $query->where('parent_id', $parentProfileId);
-            } elseif (Schema::hasColumn('students', 'parent_profile_id')) {
-                $query->where('parent_profile_id', $parentProfileId);
-            } else {
-                return collect();
-            }
-
-            return $query
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id);
-        }
-
-        if ($user->hasRole('student')) {
-            $studentId = null;
-
-            if (Schema::hasColumn('students', 'user_id')) {
-                $studentId = Student::query()
-                    ->where('user_id', $user->id)
-                    ->value('id');
-            }
-
-            return $studentId ? collect([(int) $studentId]) : collect();
-        }
-
-        return collect();
+        return app(StudentProgressService::class)
+            ->visibleStudentQuery($user)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id);
     }
 
     private function resolveTeacherId(Request $request, Student $student): ?int
@@ -448,15 +361,7 @@ class HafalanTargetController extends Controller
             return $user->teacherProfile?->id;
         }
 
-        if (Schema::hasColumn('students', 'teacher_id')) {
-            return $student->teacher_id;
-        }
-
-        if (Schema::hasColumn('students', 'teacher_profile_id')) {
-            return $student->teacher_profile_id;
-        }
-
-        return null;
+        return $student->teacher_id;
     }
 
     private function targetStatuses(): array

@@ -40,6 +40,15 @@ class HafalanTargetPolicy
 
     public function delete(User $user, HafalanTarget $hafalanTarget): bool
     {
-        return $user->hasAnyRole(['super_admin', 'admin']);
+        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        if (! $user->hasRole('teacher')) {
+            return false;
+        }
+
+        return $hafalanTarget->student
+            && app(UserAccessService::class)->canViewStudent($user, $hafalanTarget->student);
     }
 }

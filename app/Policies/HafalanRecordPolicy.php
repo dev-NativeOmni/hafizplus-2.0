@@ -34,12 +34,19 @@ class HafalanRecordPolicy
             return false;
         }
 
-        return $hafalanRecord->student
-            && app(UserAccessService::class)->canViewStudent($user, $hafalanRecord->student);
+        return (int) $hafalanRecord->teacher_id === (int) $user->teacherProfile?->id;
     }
 
     public function delete(User $user, HafalanRecord $hafalanRecord): bool
     {
-        return $user->hasAnyRole(['super_admin', 'admin']);
+        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        if (! $user->hasRole('teacher')) {
+            return false;
+        }
+
+        return (int) $hafalanRecord->teacher_id === (int) $user->teacherProfile?->id;
     }
 }

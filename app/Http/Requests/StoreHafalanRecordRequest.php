@@ -14,6 +14,15 @@ class StoreHafalanRecordRequest extends FormRequest
         return $this->user()?->hasAnyRole(['super_admin', 'admin', 'teacher']) ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->user()?->hasRole('teacher')) {
+            $this->merge([
+                'teacher_id' => $this->user()->teacherProfile?->id,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -21,6 +30,12 @@ class StoreHafalanRecordRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('students', 'id')->whereNull('deleted_at'),
+            ],
+            'teacher_id' => [
+                Rule::requiredIf(! $this->user()?->hasRole('teacher')),
+                'nullable',
+                'integer',
+                Rule::exists('teacher_profiles', 'id'),
             ],
             'surah_id' => [
                 'required',

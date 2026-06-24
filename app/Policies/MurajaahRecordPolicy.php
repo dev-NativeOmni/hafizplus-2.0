@@ -34,12 +34,19 @@ class MurajaahRecordPolicy
             return false;
         }
 
-        return $murajaahRecord->student
-            && app(UserAccessService::class)->canViewStudent($user, $murajaahRecord->student);
+        return (int) $murajaahRecord->teacher_id === (int) $user->teacherProfile?->id;
     }
 
     public function delete(User $user, MurajaahRecord $murajaahRecord): bool
     {
-        return $user->hasAnyRole(['super_admin', 'admin']);
+        if ($user->hasAnyRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        if (! $user->hasRole('teacher')) {
+            return false;
+        }
+
+        return (int) $murajaahRecord->teacher_id === (int) $user->teacherProfile?->id;
     }
 }

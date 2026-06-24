@@ -50,7 +50,10 @@ class AuthController extends Controller
             ?? $request->userAgent()
             ?? 'HafizPlus API Client';
 
-        $token = $user->createToken($deviceName)->plainTextToken;
+        $expiryDays = (int) config('hafizplus.api.token_expiration_days', 30);
+        $expiresAt  = $expiryDays > 0 ? now()->addDays($expiryDays) : null;
+
+        $token = $user->createToken($deviceName, expiresAt: $expiresAt)->plainTextToken;
 
         return ApiResponse::success(
             data: [

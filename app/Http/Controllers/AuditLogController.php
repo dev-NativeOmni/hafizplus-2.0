@@ -12,11 +12,11 @@ class AuditLogController extends Controller
     {
         $query = AuditLog::query()
             ->with('user')
-            ->when($request->filled('action'), function ($query) use ($request) {
-                $query->where('action', $request->string('action')->toString());
+            ->when($request->filled('event'), function ($query) use ($request) {
+                $query->where('action', $request->string('event')->toString());
             })
-            ->when($request->filled('table_name'), function ($query) use ($request) {
-                $query->where('table_name', $request->string('table_name')->toString());
+            ->when($request->filled('auditable_label'), function ($query) use ($request) {
+                $query->where('auditable_label', $request->string('auditable_label')->toString());
             })
             ->when($request->filled('user_id'), function ($query) use ($request) {
                 $query->where('user_id', $request->integer('user_id'));
@@ -64,26 +64,26 @@ class AuditLogController extends Controller
                 ->count(),
         ];
 
-        $actions = AuditLog::query()
+        $events = AuditLog::query()
             ->select('action')
             ->whereNotNull('action')
             ->distinct()
             ->orderBy('action')
             ->pluck('action');
 
-        $tables = AuditLog::query()
-            ->select('table_name')
-            ->whereNotNull('table_name')
+        $auditableLabels = AuditLog::query()
+            ->select('auditable_label')
+            ->whereNotNull('auditable_label')
             ->distinct()
-            ->orderBy('table_name')
-            ->pluck('table_name');
+            ->orderBy('auditable_label')
+            ->pluck('auditable_label');
 
         return view('audit-logs.index', [
             'auditLogs' => $auditLogs,
             'logs' => $auditLogs,
             'summary' => $summary,
-            'actions' => $actions,
-            'tables' => $tables,
+            'events' => $events,
+            'auditableLabels' => $auditableLabels,
         ]);
     }
 

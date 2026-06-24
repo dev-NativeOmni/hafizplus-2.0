@@ -16,10 +16,8 @@ class CheckRole
             abort(403, 'Akses ditolak. Role akun tidak valid.');
         }
 
-        if (! in_array($user->role->name, $roles, true)) {
-            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk halaman ini.');
-        }
-
+        // Cek status aktif terlebih dahulu — user nonaktif harus dilogout
+        // sebelum dilakukan pemeriksaan role apapun.
         if (! $user->isActive()) {
             auth()->logout();
 
@@ -28,6 +26,10 @@ class CheckRole
                 ->withErrors([
                     'email' => 'Akun Anda sedang nonaktif.',
                 ]);
+        }
+
+        if (! in_array($user->role->name, $roles, true)) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk halaman ini.');
         }
 
         return $next($request);
