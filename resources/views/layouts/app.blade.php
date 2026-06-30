@@ -7,22 +7,34 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <!-- Theme Initialization Script -->
+        <script>
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark')
+            } else {
+                document.documentElement.classList.remove('dark')
+            }
+        </script>
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100" x-data="{ sidebarOpen: false }">
+    <body class="font-sans antialiased bg-zinc-50 text-zinc-800 dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-200 selection:bg-indigo-500 selection:text-white">
+        <!-- Glow background blobs -->
+        <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+            <div class="glow-blob bg-indigo-600 w-[500px] h-[500px] -top-60 -left-60 opacity-5 dark:opacity-20 transition-opacity duration-300"></div>
+            <div class="glow-blob bg-purple-600 w-[450px] h-[450px] top-[30%] -right-40 opacity-5 dark:opacity-20 transition-opacity duration-300"></div>
+            <div class="glow-blob bg-emerald-600 w-[400px] h-[400px] -bottom-40 left-[20%] opacity-5 dark:opacity-15 transition-opacity duration-300"></div>
+        </div>
+
+        <div class="min-h-screen relative z-10 flex flex-col md:flex-row" x-data="{ sidebarOpen: false, dark: document.documentElement.classList.contains('dark'), toggleTheme() { this.dark = !this.dark; if (this.dark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); } } }">
             @include('layouts.navigation')
 
-            <div class="md:pl-56 flex flex-col min-h-screen">
+            <div class="md:pl-56 flex-1 flex flex-col min-h-screen">
                 <!-- Page Heading -->
                 @isset($header)
-                    <header class="bg-white shadow">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <header class="bg-white/80 dark:bg-[#09090b]/50 backdrop-blur-lg border-b border-zinc-200/50 dark:border-white/5 sticky top-0 z-10 transition-colors duration-200">
+                        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
                     </header>

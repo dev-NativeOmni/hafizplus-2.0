@@ -130,28 +130,29 @@
                                         {{ $record->teacher?->user?->name ?? '-' }}
                                     </td>
 
-                                    <td class="px-4 py-3 text-right whitespace-nowrap">
-                                        <a href="{{ route('murajaah-records.show', $record) }}"
-                                           class="text-blue-600 hover:text-blue-900 font-medium">
-                                            Detail
-                                        </a>
+                                    <td class="px-4 py-3">
+                                         <div class="flex justify-end gap-2">
+                                             <a href="{{ route('murajaah-records.show', $record) }}"
+                                                class="btn-action-detail">
+                                                 Detail
+                                             </a>
 
-                                        <a href="{{ route('murajaah-records.edit', $record) }}"
-                                           class="ml-3 text-yellow-600 hover:text-yellow-900 font-medium">
-                                            Edit
-                                        </a>
+                                             <a href="{{ route('murajaah-records.edit', $record) }}"
+                                                class="btn-action-edit">
+                                                 Edit
+                                             </a>
 
-                                        <form action="{{ route('murajaah-records.destroy', $record) }}"
-                                              method="POST"
-                                              class="inline-block ml-3"
-                                              onsubmit="return confirm('Yakin ingin menghapus data murajaah ini?')">
-                                            @csrf
-                                            @method('DELETE')
+                                             <form action="{{ route('murajaah-records.destroy', $record) }}"
+                                                   method="POST"
+                                                   onsubmit="return confirm('Yakin ingin menghapus data murajaah ini?')">
+                                                 @csrf
+                                                 @method('DELETE')
 
-                                            <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
-                                                Hapus
-                                            </button>
-                                        </form>
+                                                 <button type="submit" class="btn-action-delete">
+                                                     Hapus
+                                                 </button>
+                                             </form>
+                                         </div>
                                     </td>
                                 </tr>
                             @empty

@@ -1,9 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @plugin "@tailwindcss/forms";
 
 @theme {
-    --font-sans: "Figtree", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-serif: "Instrument Serif", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --color-supaste-dark: #09090b;
+    --color-supaste-dark-gray: #18181b;
+    --color-supaste-indigo: #6366f1;
+    --color-supaste-purple: #a855f7;
+    --color-supaste-emerald: #10b981;
 }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(9, 9, 11, 0.8);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Glassmorphism & Premium UI Classes */
+.glass-panel {
+    background-color: rgba(24, 24, 27, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+    background-color: rgba(39, 39, 42, 0.65);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06), 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+}
+
+.glow-blob {
+    position: absolute;
+    border-radius: 100%;
+    filter: blur(130px);
+    opacity: 0.22;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.text-gradient-purple-blue {
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-metallic {
+    background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 /* =========================================================
    HafizPlus UI Color Fallback
    Tujuan:
@@ -226,4 +294,293 @@ button.bg-gray-900 * {
 /* Override max-w-7xl constraint to support widescreen layout optimization */
 .max-w-7xl {
     max-width: 100% !important;
+}
+
+/* Card & Form optimization for dark mode compatibility */
+.dark .bg-white {
+    background-color: rgba(24, 24, 27, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #f4f4f5 !important;
+}
+.dark .text-gray-900, .dark .text-gray-800 {
+    color: #f4f4f5 !important;
+}
+.dark .text-gray-600, .dark .text-gray-500, .dark .text-gray-400 {
+    color: #a1a1aa !important;
+}
+.dark .bg-gray-100 {
+    background-color: #09090b !important;
+}
+.dark .border-gray-200, .dark .border-gray-100 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dark input, .dark select, .dark textarea {
+    background-color: rgba(9, 9, 11, 0.5) !important;
+    color: #f4f4f5 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Premium Table Action Buttons */
+.btn-action-detail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background-color: #eff6ff !important; /* bg-blue-50 */
+    color: #1d4ed8 !important; /* text-blue-700 */
+    border: 1px solid #bfdbfe !important; /* border-blue-200 */
+    transition: all 0.15s ease-in-out;
+}
+.btn-action-detail:hover {
+    background-color: #dbeafe !important; /* bg-blue-100 */
+    color: #1e40af !important; /* text-blue-800 */
+    text-decoration: none !important;
+}
+.dark .btn-action-detail {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #60a5fa !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+.dark .btn-action-detail:hover {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #93c5fd !important;
+}
+
+.btn-action-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background-color: #fffbeb !important; /* bg-amber-50 */
+    color: #b45309 !important; /* text-amber-700 */
+    border: 1px solid #fde68a !important; /* border-amber-200 */
+    transition: all 0.15s ease-in-out;
+}
+.btn-action-edit:hover {
+    background-color: #fef3c7 !important; /* bg-amber-100 */
+    color: #92400e !important; /* text-amber-800 */
+    text-decoration: none !important;
+}
+.dark .btn-action-edit {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.2) !important;
+}
+.dark .btn-action-edit:hover {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #fcd34d !important;
+}
+
+.btn-action-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background-color: #fef2f2 !important; /* bg-red-50 */
+    color: #b91c1c !important; /* text-red-700 */
+    border: 1px solid #fecaca !important; /* border-red-200 */
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+.btn-action-delete:hover {
+    background-color: #fee2e2 !important; /* bg-red-100 */
+    color: #991b1b !important; /* text-red-800 */
+    text-decoration: none !important;
+}
+.dark .btn-action-delete {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+.dark .btn-action-delete:hover {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
+}
+
+.btn-action-complete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    background-color: #ecfdf4 !important; /* bg-green-50 */
+    color: #16a34a !important; /* text-green-600 */
+    border: 1px solid #bbf7d0 !important; /* border-green-200 */
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+.btn-action-complete:hover {
+    background-color: #dcfce7 !important; /* bg-green-100 */
+    color: #15803d !important; /* text-green-700 */
+    text-decoration: none !important;
+}
+.dark .btn-action-complete {
+    background-color: rgba(22, 163, 74, 0.1) !important;
+    color: #4ade80 !important;
+    border-color: rgba(22, 163, 74, 0.2) !important;
+}
+.dark .btn-action-complete:hover {
+    background-color: rgba(22, 163, 74, 0.2) !important;
+    color: #86efac !important;
+}
+
+/* =========================================================
+   Interactive Mushaf Theme Overrides
+   Tujuan: Mencegah class global `.dark` meng-override tampilan
+   mushaf saat pengguna memilih tema 'Bright' atau 'Sepia' di mushaf.
+   ========================================================= */
+
+/* --- TEMA BRIGHT/LIGHT MUSHAF --- */
+.mushaf-theme-light .bg-white,
+.mushaf-theme-light .bg-white\/80 {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border-color: #e5e7eb !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.mushaf-theme-light select,
+.mushaf-theme-light input,
+.mushaf-theme-light textarea {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: #d1d5db !important;
+}
+
+.mushaf-theme-light .text-gray-900,
+.mushaf-theme-light .text-gray-800,
+.mushaf-theme-light .text-zinc-800,
+.mushaf-theme-light .text-gray-700,
+.mushaf-theme-light .text-zinc-700,
+.mushaf-theme-light span.text-gray-900,
+.mushaf-theme-light span.text-gray-800 {
+    color: #111827 !important;
+}
+
+.mushaf-theme-light .text-gray-500,
+.mushaf-theme-light .text-gray-600,
+.mushaf-theme-light .text-zinc-500,
+.mushaf-theme-light .text-zinc-400 {
+    color: #6b7280 !important;
+}
+
+.mushaf-theme-light .border-gray-200,
+.mushaf-theme-light .border-gray-150,
+.mushaf-theme-light .border-indigo-100 {
+    border-color: #e5e7eb !important;
+}
+
+.mushaf-theme-light .bg-gray-50,
+.mushaf-theme-light .bg-gray-50\/50,
+.mushaf-theme-light .bg-indigo-50 {
+    background-color: #f9fafb !important;
+    color: #111827 !important;
+}
+
+/* Custom reset for target items inside light theme */
+.mushaf-theme-light .rounded-xl.border {
+    border-color: #e5e7eb !important;
+    background-color: #f9fafb !important;
+}
+
+.mushaf-theme-light .rounded-xl.border:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.mushaf-theme-light .rounded-xl.border.border-indigo-500 {
+    border-color: #6366f1 !important;
+    background-color: #eef2ff !important;
+}
+
+.mushaf-theme-light .rounded-xl.border.border-indigo-500 * {
+    color: inherit !important;
+}
+
+.mushaf-theme-light .tafsir-text-box,
+.mushaf-theme-light .mt-3.p-3\.5 {
+    background-color: #f0f4f8 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+/* --- TEMA SEPIA MUSHAF --- */
+.mushaf-theme-sepia .bg-white {
+    background-color: #f5edd2 !important;
+    color: #4a3c31 !important;
+    border-color: #dfd5b2 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.mushaf-theme-sepia select,
+.mushaf-theme-sepia input,
+.mushaf-theme-sepia textarea {
+    background-color: #fdfbf7 !important;
+    color: #4a3c31 !important;
+    border-color: #d4caa7 !important;
+}
+
+.mushaf-theme-sepia .text-gray-900,
+.mushaf-theme-sepia .text-gray-800,
+.mushaf-theme-sepia .text-zinc-800,
+.mushaf-theme-sepia .text-gray-700,
+.mushaf-theme-sepia .text-zinc-700,
+.mushaf-theme-sepia span.text-gray-900,
+.mushaf-theme-sepia span.text-gray-800 {
+    color: #4a3c31 !important;
+}
+
+.mushaf-theme-sepia .text-gray-500,
+.mushaf-theme-sepia .text-gray-600,
+.mushaf-theme-sepia .text-zinc-500,
+.mushaf-theme-sepia .text-zinc-400 {
+    color: #705e50 !important;
+}
+
+.mushaf-theme-sepia .border-gray-200,
+.mushaf-theme-sepia .border-gray-150,
+.mushaf-theme-sepia .border-indigo-100 {
+    border-color: #dfd5b2 !important;
+}
+
+.mushaf-theme-sepia .bg-gray-50,
+.mushaf-theme-sepia .bg-gray-50\/50,
+.mushaf-theme-sepia .bg-indigo-50 {
+    background-color: #ece3c5 !important;
+    color: #4a3c31 !important;
+}
+
+.mushaf-theme-sepia .rounded-xl.border {
+    border-color: #dfd3ad !important;
+    background-color: #ece3c5 !important;
+}
+
+.mushaf-theme-sepia .rounded-xl.border:hover {
+    background-color: #e5dab6 !important;
+}
+
+.mushaf-theme-sepia .rounded-xl.border.border-indigo-500 {
+    border-color: #9c6644 !important;
+    background-color: #f3edd8 !important;
+}
+
+.mushaf-theme-sepia .tafsir-text-box,
+.mushaf-theme-sepia .mt-3.p-3\.5 {
+    background-color: #e5dac1 !important;
+    border-color: #d1c1a5 !important;
+    color: #4a3c31 !important;
 }

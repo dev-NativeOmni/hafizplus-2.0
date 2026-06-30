@@ -188,12 +188,12 @@
                                     <td class="px-4 py-4">
                                         <div class="flex items-center justify-end gap-2">
                                             <a href="{{ route('hafalan-targets.show', $target) }}"
-                                               class="text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                               class="btn-action-detail">
                                                 Detail
                                             </a>
 
                                             <a href="{{ route('hafalan-targets.edit', $target) }}"
-                                               class="text-sm font-semibold text-blue-700 hover:text-blue-900">
+                                               class="btn-action-edit">
                                                 Edit
                                             </a>
 
@@ -202,7 +202,7 @@
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit"
-                                                            class="text-sm font-semibold text-green-700 hover:text-green-900">
+                                                            class="btn-action-complete">
                                                         Selesai
                                                     </button>
                                                 </form>
@@ -213,7 +213,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
-                                                        class="text-sm font-semibold text-red-700 hover:text-red-900">
+                                                        class="btn-action-delete">
                                                     Hapus
                                                 </button>
                                             </form>

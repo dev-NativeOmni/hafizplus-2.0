@@ -40,11 +40,11 @@
          x-init="init()"
          @set-tab.window="activeTab = $event.detail"
          :class="{ 
-            'bg-gray-50 text-gray-900': theme === 'light', 
-            'bg-[#f4efe2] text-[#4a3c31]': theme === 'sepia', 
-            'bg-[#121214] text-[#e2e8f0]': theme === 'dark' 
+            'bg-gray-50 text-gray-900 mushaf-theme-light': theme === 'light', 
+            'bg-[#f4efe2] text-[#4a3c31] mushaf-theme-sepia': theme === 'sepia', 
+            'bg-[#121214] text-[#e2e8f0] mushaf-theme-dark': theme === 'dark' 
          }"
-         class="min-h-screen py-6 transition-colors duration-300">
+         class="mushaf-app-container min-h-screen py-6 transition-colors duration-300">
         
         <div class="mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-[1600px] space-y-6">
             
@@ -262,7 +262,12 @@
                                 <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-600/30 via-yellow-600/5 to-yellow-600/30"></div>
                                 
                                 <!-- Page Image with beautiful filters for Sepia and Dark mode -->
-                                <div class="relative w-full max-w-[500px] border border-yellow-700/20 p-2 sm:p-4 rounded-xl bg-[#fff] shadow-sm select-none"
+                                <div class="relative w-full max-w-[500px] border border-yellow-700/20 p-2 sm:p-4 rounded-xl shadow-sm select-none"
+                                     :class="{
+                                         'bg-white': theme === 'light',
+                                         'bg-[#fdfbf7]': theme === 'sepia',
+                                         'bg-[#282830]': theme === 'dark'
+                                     }"
                                      style="min-height: 500px;">
                                     
                                     <!-- Dynamic Loading Overlay -->
@@ -319,7 +324,7 @@
                                 </div>
 
                                 <!-- Dynamic Verse Cards Container -->
-                                <div class="flex-grow overflow-y-auto mt-4 space-y-4 pr-1 scrollbar-thin" id="verse-list-container">
+                                <div class="flex-grow overflow-y-auto mt-4 space-y-6 pr-1 scrollbar-thin" id="verse-list-container">
                                     <template x-show="!loading" x-for="(verse, index) in verses" :key="verse.id">
                                         <div :id="`verse-card-${verse.id}`"
                                              :class="{
@@ -328,10 +333,10 @@
                                                  'border-[#dfd3ad] bg-[#ece3c5]/30 hover:bg-[#ece3c5]/70': theme === 'sepia' && playingVerseId !== verse.id,
                                                  'border-[#2b2b38] bg-[#22222a]/40 hover:bg-[#22222a]/80': theme === 'dark' && playingVerseId !== verse.id
                                              }"
-                                             class="rounded-xl border p-4 transition-all duration-200">
+                                             class="rounded-xl border p-5 sm:p-6 transition-all duration-200">
                                             
                                             <!-- Verse Header (Surah:Ayah and Quick-Inputs link) -->
-                                            <div class="flex items-center justify-between mb-3 text-xs opacity-75">
+                                            <div class="flex items-center justify-between mb-4 text-xs opacity-75">
                                                 <span class="font-semibold" x-text="getSurahNameAndAyah(verse.verse_key)"></span>
                                                 
                                                 <!-- Action links -->
@@ -348,7 +353,7 @@
                                             </div>
 
                                             <!-- Uthmani Arabic Text -->
-                                            <div class="text-right leading-loose mb-3 font-arabic"
+                                            <div class="text-right mb-5 font-arabic"
                                                  style="direction: rtl;">
                                                 <span :class="arabicFontClass" 
                                                       class="inline-block text-2xl sm:text-3xl text-gray-900 dark:text-gray-100 antialiased font-semibold select-all"
@@ -360,7 +365,7 @@
                                             </div>
 
                                             <!-- Indonesian Translation -->
-                                            <p class="text-xs sm:text-sm leading-relaxed mb-4" 
+                                            <p class="text-xs sm:text-sm leading-relaxed mb-5" 
                                                x-html="getIndonesianTranslation(verse)"></p>
 
                                             <!-- Action Toolbar for Verse -->
@@ -1000,22 +1005,39 @@
                     if (isExpanded && !this.tafsirText[verse.id]) {
                         this.tafsirLoading[verse.id] = true;
                         
-                        // Fetch Tafsir Jalalayn/Kemenag from Quran.com API v4
-                        // Tafsir Kemenag (Wajiz) ID is 512
-                        fetch(`https://api.quran.com/api/v4/tafsirs/512/by_ayah/${verse.verse_key}?language=id`)
-                            .then(res => {
-                                if (!res.ok) throw new Error("Gagal memuat tafsir");
-                                return res.json();
-                            })
-                            .then(data => {
-                                this.tafsirText[verse.id] = data.tafsir ? data.tafsir.text : 'Tafsir tidak ditemukan.';
-                                this.tafsirLoading[verse.id] = false;
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                this.tafsirText[verse.id] = 'Gagal memuat tafsir. Periksa koneksi internet Anda.';
-                                this.tafsirLoading[verse.id] = false;
-                            });
+                        const surahId = this.getSurahIdFromKey(verse.verse_key);
+                        const ayahNum = this.getAyahNumFromKey(verse.verse_key);
+
+                        // Initialize surahTafsirs cache if not exists
+                        if (!this.surahTafsirs) {
+                            this.surahTafsirs = {};
+                        }
+
+                        if (this.surahTafsirs[surahId]) {
+                            // Load from cache
+                            const tafsirItem = this.surahTafsirs[surahId].find(t => t.ayat === ayahNum);
+                            this.tafsirText[verse.id] = tafsirItem ? tafsirItem.teks : 'Tafsir tidak ditemukan.';
+                            this.tafsirLoading[verse.id] = false;
+                        } else {
+                            // Fetch surah tafsir from EQuran.id
+                            fetch(`https://equran.id/api/v2/tafsir/${surahId}`)
+                                .then(res => {
+                                    if (!res.ok) throw new Error("Gagal memuat tafsir");
+                                    return res.json();
+                                })
+                                .then(resJson => {
+                                    const tafsirList = resJson.data && resJson.data.tafsir ? resJson.data.tafsir : [];
+                                    this.surahTafsirs[surahId] = tafsirList;
+                                    const tafsirItem = tafsirList.find(t => t.ayat === ayahNum);
+                                    this.tafsirText[verse.id] = tafsirItem ? tafsirItem.teks : 'Tafsir tidak ditemukan.';
+                                    this.tafsirLoading[verse.id] = false;
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    this.tafsirText[verse.id] = 'Gagal memuat tafsir Kemenag. Silakan coba lagi.';
+                                    this.tafsirLoading[verse.id] = false;
+                                });
+                        }
                     }
                 }
             };
@@ -1026,6 +1048,15 @@
     <style>
         .font-arabic {
             font-family: 'Scheherazade New', 'Amiri', serif;
+            line-height: 3.0 !important;
+            word-spacing: normal !important;
+            letter-spacing: normal !important;
+        }
+        .font-scheherazade {
+            font-family: 'Scheherazade New', 'Amiri', serif !important;
+            line-height: 3.0 !important;
+            word-spacing: normal !important;
+            letter-spacing: normal !important;
         }
         /* Custom scrollbar styling */
         .scrollbar-thin::-webkit-scrollbar {

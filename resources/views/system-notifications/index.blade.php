@@ -194,13 +194,13 @@
 
                             <div class="flex flex-wrap items-center gap-2">
                                 <a href="{{ route('system-notifications.show', $notification) }}"
-                                   class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                   class="btn-action-detail">
                                     Detail
                                 </a>
 
                                 @if ($canManage)
                                     <a href="{{ route('system-notifications.edit', $notification) }}"
-                                       class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                       class="btn-action-edit">
                                         Edit
                                     </a>
                                 @endif
@@ -211,7 +211,7 @@
                                         @method('PATCH')
 
                                         <button type="submit"
-                                                class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                                                class="btn-action-complete">
                                             Dibaca
                                         </button>
                                     </form>

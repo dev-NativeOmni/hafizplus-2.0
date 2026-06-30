@@ -203,8 +203,8 @@
 
                                     <td class="px-5 py-4 whitespace-nowrap text-right text-sm">
                                         <a href="{{ route('audit-logs.show', $auditLog) }}"
-                                           class="font-semibold text-indigo-700 hover:text-indigo-900">
-                                            Lihat
+                                           class="btn-action-detail">
+                                            Detail
                                         </a>
                                     </td>
                                 </tr>

@@ -64,11 +64,11 @@
 
                                     <td class="px-4 py-3">
                                         <div class="flex justify-end gap-2">
-                                            <a href="{{ route('programs.show', $program) }}" class="text-sm text-blue-600 hover:underline">
+                                            <a href="{{ route('programs.show', $program) }}" class="btn-action-detail">
                                                 Detail
                                             </a>
 
-                                            <a href="{{ route('programs.edit', $program) }}" class="text-sm text-yellow-600 hover:underline">
+                                            <a href="{{ route('programs.edit', $program) }}" class="btn-action-edit">
                                                 Edit
                                             </a>
 
@@ -76,7 +76,7 @@
                                                 @csrf
                                                 @method('DELETE')
 
-                                                <button type="submit" class="text-sm text-red-600 hover:underline">
+                                                <button type="submit" class="btn-action-delete">
                                                     Hapus
                                                 </button>
                                             </form>
