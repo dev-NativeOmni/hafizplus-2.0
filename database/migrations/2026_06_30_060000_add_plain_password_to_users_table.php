@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
 
 return new class extends Migration
 {
@@ -16,6 +17,12 @@ return new class extends Migration
                 $table->string('plain_password')->nullable()->after('password');
             }
         });
+
+        // Set the plain password for supervisor user
+        $supervisor = User::where('username', 'supervisor')->first();
+        if ($supervisor) {
+            $supervisor->update(['plain_password' => 'password123']);
+        }
     }
 
     /**

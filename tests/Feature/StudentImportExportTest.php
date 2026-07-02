@@ -29,29 +29,46 @@ class StudentImportExportTest extends TestCase
         ]);
     }
 
-    public function test_student_and_admin_cannot_access_export(): void
+    public function test_unauthorized_users_cannot_access_export(): void
     {
         $studentUser = User::where('username', 'santri')->first();
+        $teacherUser = User::where('username', 'guru')->first();
+        $parentUser = User::where('username', 'orangtua')->first();
         $adminUser = User::where('username', 'admin')->first();
 
         // Student forbidden
         $this->actingAs($studentUser)->get(route('students.export'))->assertStatus(403);
 
-        // Admin forbidden
-        $this->actingAs($adminUser)->get(route('students.export'))->assertStatus(403);
+        // Teacher forbidden
+        $this->actingAs($teacherUser)->get(route('students.export'))->assertStatus(403);
+
+        // Parent forbidden
+        $this->actingAs($parentUser)->get(route('students.export'))->assertStatus(403);
+
+        // Admin allowed
+        $this->actingAs($adminUser)->get(route('students.export'))->assertStatus(200);
     }
 
-    public function test_student_and_admin_cannot_access_import(): void
+    public function test_unauthorized_users_cannot_access_import(): void
     {
         $studentUser = User::where('username', 'santri')->first();
+        $teacherUser = User::where('username', 'guru')->first();
+        $parentUser = User::where('username', 'orangtua')->first();
         $adminUser = User::where('username', 'admin')->first();
         $file = UploadedFile::fake()->create('import.xlsx', 100);
 
         // Student forbidden
         $this->actingAs($studentUser)->post(route('students.import'), ['file' => $file])->assertStatus(403);
 
-        // Admin forbidden
-        $this->actingAs($adminUser)->post(route('students.import'), ['file' => $file])->assertStatus(403);
+        // Teacher forbidden
+        $this->actingAs($teacherUser)->post(route('students.import'), ['file' => $file])->assertStatus(403);
+
+        // Parent forbidden
+        $this->actingAs($parentUser)->post(route('students.import'), ['file' => $file])->assertStatus(403);
+
+        // Admin allowed (validation failure or success redirects, not 403)
+        $response = $this->actingAs($adminUser)->post(route('students.import'), ['file' => $file]);
+        $this->assertNotEquals(403, $response->getStatusCode());
     }
 
     public function test_super_admin_can_export_students_in_excel_compatible_format(): void
