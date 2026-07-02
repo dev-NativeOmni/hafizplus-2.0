@@ -62,7 +62,12 @@
                         <select name="role_id" id="role_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white" required>
                             @foreach ($roles as $role)
                                 <option value="{{ $role->id }}" @selected(old('role_id', $user->role_id) == $role->id) class="dark:bg-zinc-900">
-                                    {{ $role->display_name }} ({{ $role->name }})
+                                    {{ $role->display_name }} ({{ 
+                                        $role->name === 'tanse' ? 'school resilience affairs coordinator' : (
+                                        $role->name === 'supervisor' ? 'religious affairs coordinator' : (
+                                        $role->name === 'coordinator_tahfizh' ? 'tahfizh affairs coordinator' : 
+                                        $role->name))
+                                    }})
                                 </option>
                             @endforeach
                         </select>

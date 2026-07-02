@@ -64,7 +64,12 @@
                             <option value="">-- Pilih Peran --</option>
                             @foreach ($roles as $role)
                                 <option value="{{ $role->id }}" @selected(old('role_id') == $role->id) class="dark:bg-zinc-900">
-                                    {{ $role->display_name }} ({{ $role->name }})
+                                    {{ $role->display_name }} ({{ 
+                                        $role->name === 'tanse' ? 'school resilience affairs coordinator' : (
+                                        $role->name === 'supervisor' ? 'religious affairs coordinator' : (
+                                        $role->name === 'coordinator_tahfizh' ? 'tahfizh affairs coordinator' : 
+                                        $role->name))
+                                    }})
                                 </option>
                             @endforeach
                         </select>
