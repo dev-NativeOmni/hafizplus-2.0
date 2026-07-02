@@ -52,6 +52,8 @@ class HafalanRecordController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorize('create', HafalanRecord::class);
+
         return view('hafalan-records.create', $this->formData($request->user()));
     }
 

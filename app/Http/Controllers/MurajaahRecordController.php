@@ -52,6 +52,8 @@ class MurajaahRecordController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorize('create', MurajaahRecord::class);
+
         return view('murajaah-records.create', $this->formData($request->user()));
     }
 

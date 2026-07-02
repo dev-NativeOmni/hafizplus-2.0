@@ -24,7 +24,7 @@ class StudentProgressService
             return $query->whereRaw('1 = 0');
         }
 
-        if ($this->userHasAnyRole($user, ['super_admin', 'admin'])) {
+        if ($this->userHasAnyRole($user, ['super_admin', 'admin', 'headmaster', 'supervisor', 'coordinator_tahfizh'])) {
             return $query;
         }
 

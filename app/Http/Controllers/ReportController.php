@@ -435,7 +435,7 @@ class ReportController extends Controller
             return collect();
         }
 
-        if ($this->userHasAnyRole($user, ['super_admin', 'admin'])) {
+        if ($this->userHasAnyRole($user, ['super_admin', 'admin', 'headmaster', 'supervisor', 'coordinator_tahfizh'])) {
             return Student::query()
                 ->pluck('id');
         }

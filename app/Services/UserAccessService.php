@@ -20,7 +20,7 @@ class UserAccessService
 
     public function canViewStudent(User $user, Student $student): bool
     {
-        if ($this->isAdmin($user)) {
+        if ($this->isAdmin($user) || $user->hasAnyRole(['headmaster', 'supervisor', 'coordinator_tahfizh'])) {
             return true;
         }
 
@@ -52,7 +52,7 @@ class UserAccessService
 
     public function visibleStudentIds(User $user): Collection
     {
-        if ($this->isAdmin($user)) {
+        if ($this->isAdmin($user) || $user->hasAnyRole(['headmaster', 'supervisor', 'coordinator_tahfizh'])) {
             return Student::query()
                 ->pluck('id');
         }

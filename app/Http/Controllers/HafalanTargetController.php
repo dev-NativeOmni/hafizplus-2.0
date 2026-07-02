@@ -118,6 +118,7 @@ class HafalanTargetController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorize('create', HafalanTarget::class);
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         $students = Student::query()
@@ -142,6 +143,7 @@ class HafalanTargetController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', HafalanTarget::class);
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         $validated = $this->validateTarget($request, $visibleStudentIds);
@@ -185,6 +187,7 @@ class HafalanTargetController extends Controller
     public function edit(Request $request, HafalanTarget $hafalanTarget): View
     {
         $this->authorizeTargetAccess($request, $hafalanTarget);
+        $this->authorize('update', $hafalanTarget);
 
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
@@ -214,6 +217,7 @@ class HafalanTargetController extends Controller
     public function update(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
         $this->authorizeTargetAccess($request, $hafalanTarget);
+        $this->authorize('update', $hafalanTarget);
 
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
@@ -236,6 +240,7 @@ class HafalanTargetController extends Controller
     public function destroy(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
         $this->authorizeTargetAccess($request, $hafalanTarget);
+        $this->authorize('delete', $hafalanTarget);
 
         $hafalanTarget->delete();
 
@@ -247,6 +252,7 @@ class HafalanTargetController extends Controller
     public function complete(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
         $this->authorizeTargetAccess($request, $hafalanTarget);
+        $this->authorize('update', $hafalanTarget);
 
         $data = [
             'status' => 'completed',
@@ -266,6 +272,7 @@ class HafalanTargetController extends Controller
     public function markMissed(Request $request, HafalanTarget $hafalanTarget): RedirectResponse
     {
         $this->authorizeTargetAccess($request, $hafalanTarget);
+        $this->authorize('update', $hafalanTarget);
 
         $hafalanTarget->update([
             'status' => 'missed',

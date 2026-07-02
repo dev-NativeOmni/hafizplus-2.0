@@ -10,7 +10,7 @@ class StudentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['super_admin', 'admin', 'teacher', 'parent', 'student']);
+        return $user->hasAnyRole(['super_admin', 'admin', 'teacher', 'parent', 'student', 'headmaster', 'supervisor', 'coordinator_tahfizh']);
     }
 
     public function view(User $user, Student $student): bool

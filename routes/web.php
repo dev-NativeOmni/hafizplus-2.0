@@ -178,7 +178,7 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:super_admin,admin,teacher'])->group(function () {
+    Route::middleware(['role:super_admin,admin,teacher,headmaster,supervisor,coordinator_tahfizh'])->group(function () {
         Route::resource('hafalan-records', HafalanRecordController::class);
         Route::resource('murajaah-records', MurajaahRecordController::class);
 
@@ -220,7 +220,7 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster'])->group(function () {
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh'])->group(function () {
         Route::get('/progress', [ProgressController::class, 'index'])
             ->name('progress.index');
 
