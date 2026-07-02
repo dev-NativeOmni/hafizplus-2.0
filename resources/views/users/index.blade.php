@@ -21,6 +21,12 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="p-4 bg-rose-50 dark:bg-rose-955/30 border border-rose-200 dark:border-rose-800 rounded-lg text-rose-850 dark:text-rose-350 text-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <!-- Deskripsi Panel -->
             <div class="bg-gradient-to-r from-violet-600 via-indigo-650 to-indigo-700 text-white rounded-xl shadow-lg p-6 relative overflow-hidden">
                 <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-12 translate-y-12">
@@ -157,9 +163,20 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-right">
-                                        <a href="{{ route('users.edit', $u) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition duration-150">
-                                            Edit Kredensial
-                                        </a>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a href="{{ route('users.edit', $u) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition duration-150">
+                                                Edit
+                                            </a>
+                                            @if (auth()->id() !== $u->id)
+                                                <form action="{{ route('users.destroy', $u) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus user ini?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition duration-150 cursor-pointer">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

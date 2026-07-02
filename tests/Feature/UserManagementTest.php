@@ -196,4 +196,65 @@ class UserManagementTest extends TestCase
         $responseInactive->assertSee('Inactive Teacher Name');
         $responseInactive->assertDontSee('Active Teacher Name');
     }
+
+    public function test_super_admin_can_delete_other_user(): void
+    {
+        $superAdminRole = Role::where('name', 'super_admin')->first();
+        $superAdmin = User::factory()->create([
+            'role_id' => $superAdminRole->id,
+            'username' => 'testsuperadmin',
+            'status' => 'active',
+        ]);
+
+        $teacher = User::factory()->create([
+            'role_id' => Role::where('name', 'teacher')->first()->id,
+            'username' => 'teacherdelete',
+        ]);
+
+        $response = $this->actingAs($superAdmin)->delete(route('users.destroy', $teacher));
+        $response->assertRedirect(route('users.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertSoftDeleted('users', [
+            'id' => $teacher->id,
+        ]);
+    }
+
+    public function test_super_admin_cannot_delete_self(): void
+    {
+        $superAdminRole = Role::where('name', 'super_admin')->first();
+        $superAdmin = User::factory()->create([
+            'role_id' => $superAdminRole->id,
+            'username' => 'testsuperadmin',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($superAdmin)->delete(route('users.destroy', $superAdmin));
+        $response->assertRedirect(route('users.index'));
+        $response->assertSessionHas('error');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $superAdmin->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    public function test_non_super_admin_cannot_delete_user(): void
+    {
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create([
+            'role_id' => $adminRole->id,
+            'username' => 'testadmin',
+            'status' => 'active',
+        ]);
+
+        $teacher = User::factory()->create([
+            'role_id' => Role::where('name', 'teacher')->first()->id,
+            'username' => 'teacherdelete',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('users.destroy', $teacher))
+            ->assertStatus(403);
+    }
 }

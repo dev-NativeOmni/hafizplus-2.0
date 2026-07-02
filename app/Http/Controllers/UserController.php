@@ -114,6 +114,24 @@ class UserController extends Controller
             ->with('success', 'User baru berhasil dibuat.');
     }
 
+    public function destroy(User $user): RedirectResponse
+    {
+        $this->authorizeSuperAdmin();
+
+        if (auth()->id() === $user->id) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
+
+        $username = $user->username;
+        $user->delete();
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User ' . $username . ' berhasil dihapus.');
+    }
+
     private function authorizeSuperAdmin(): void
     {
         if (! auth()->user()->hasRole('super_admin')) {
