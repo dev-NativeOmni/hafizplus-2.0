@@ -18,7 +18,7 @@ class ParentController extends Controller
     public function index(Request $request): View
     {
         $parents = ParentProfile::query()
-            ->with('user')
+            ->with(['user', 'students'])
             ->withCount('students')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();

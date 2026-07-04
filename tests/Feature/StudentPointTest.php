@@ -174,14 +174,16 @@ class StudentPointTest extends TestCase
 
         // Student 1 (active)
         $studentUser1 = User::where('username', 'santri')->first();
-        $student1 = Student::create([
-            'user_id' => $studentUser1->id,
-            'class_room_id' => $classRoom->id,
-            'name' => 'Santri Kesatu',
-            'student_number' => 'SNT-001',
-            'gender' => 'male',
-            'status' => 'active',
-        ]);
+        $student1 = Student::updateOrCreate(
+            ['user_id' => $studentUser1->id],
+            [
+                'class_room_id' => $classRoom->id,
+                'name' => 'Santri Kesatu',
+                'student_number' => 'SNT-001',
+                'gender' => 'male',
+                'status' => 'active',
+            ]
+        );
 
         // Student 2
         $studentUser2 = User::factory()->create([
@@ -227,10 +229,10 @@ class StudentPointTest extends TestCase
 
         // Test Parent isolation
         $parentUser = User::where('username', 'orangtua')->first();
-        $parentProfile = ParentProfile::create([
-            'user_id' => $parentUser->id,
-            'phone' => '08987654321',
-        ]);
+        $parentProfile = ParentProfile::updateOrCreate(
+            ['user_id' => $parentUser->id],
+            ['phone' => '08987654321']
+        );
         // Connect parent to Student 1 only
         $parentProfile->students()->attach($student1->id, ['relation' => 'father']);
 

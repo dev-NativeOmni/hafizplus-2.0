@@ -21,7 +21,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <div class="py-8" x-data="{ tab: 'list' }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             @if (session('success'))
@@ -78,149 +78,322 @@
                 </div>
             </div>
 
-            <!-- Filter & Search (no-print) -->
-            <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 shadow-sm transition-colors duration-200">
-                <form method="GET" action="{{ route('student-points.index') }}" class="flex flex-wrap items-end gap-4">
-                    <div class="flex-1 min-w-[200px]">
-                        <label for="search" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Cari Santri</label>
-                        <input
-                            type="text"
-                            name="search"
-                            id="search"
-                            value="{{ request('search') }}"
-                            placeholder="Cari nama atau NIS santri..."
-                            class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                        />
-                    </div>
-
-                    <div class="w-full sm:w-48">
-                        <label for="type" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Tipe Poin</label>
-                        <select name="type" id="type" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                            <option value="">Semua Tipe</option>
-                            <option value="violation" {{ request('type') === 'violation' ? 'selected' : '' }}>Pelanggaran</option>
-                            <option value="reward" {{ request('type') === 'reward' ? 'selected' : '' }}>Penghargaan</option>
-                        </select>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors min-h-[42px]">
-                            Filter
-                        </button>
-                        @if (request()->anyFilled(['search', 'type']))
-                            <a href="{{ route('student-points.index') }}" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors min-h-[42px]">
-                                Reset
-                            </a>
-                        @endif
-                    </div>
-                </form>
+            <!-- Tab Controls -->
+            <div class="flex border-b border-gray-200 dark:border-zinc-800 gap-6 no-print">
+                <button 
+                    @click="tab = 'list'"
+                    :class="tab === 'list' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-zinc-400' "
+                    class="py-3 px-1 border-b-2 text-sm transition-all focus:outline-none"
+                >
+                    Riwayat Catatan
+                </button>
+                <button 
+                    @click="tab = 'dashboard'"
+                    :class="tab === 'dashboard' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-zinc-400' "
+                    class="py-3 px-1 border-b-2 text-sm transition-all focus:outline-none"
+                >
+                    Dashboard Analitis
+                </button>
             </div>
 
-            <!-- List Table -->
-            <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden transition-colors duration-200">
-                <div class="border-b border-gray-200 dark:border-zinc-800 px-6 py-4 bg-gray-50/50 dark:bg-[#09090b]/40">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Riwayat Poin Kedisiplinan</h3>
+            <!-- List Tab Content -->
+            <div x-show="tab === 'list'" x-transition class="space-y-6">
+                <!-- Filter & Search (no-print) -->
+                <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 shadow-sm transition-colors duration-200">
+                    <form method="GET" action="{{ route('student-points.index') }}" class="flex flex-wrap items-end gap-4">
+                        <div class="flex-1 min-w-[200px]">
+                            <label for="search" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Cari Santri</label>
+                            <input
+                                type="text"
+                                name="search"
+                                id="search"
+                                value="{{ request('search') }}"
+                                placeholder="Cari nama atau NIS santri..."
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            />
+                        </div>
+
+                        <div class="w-full sm:w-48">
+                            <label for="type" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Tipe Poin</label>
+                            <select name="type" id="type" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">Semua Tipe</option>
+                                <option value="violation" {{ request('type') === 'violation' ? 'selected' : '' }}>Pelanggaran</option>
+                                <option value="reward" {{ request('type') === 'reward' ? 'selected' : '' }}>Penghargaan</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors min-h-[42px]">
+                                Filter
+                            </button>
+                            @if (request()->anyFilled(['search', 'type']))
+                                <a href="{{ route('student-points.index') }}" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors min-h-[42px]">
+                                    Reset
+                                </a>
+                            @endif
+                        </div>
+                    </form>
                 </div>
 
-                @if ($points->isEmpty())
-                    <div class="p-8 text-center text-sm text-gray-500 dark:text-zinc-500">
-                        Tidak ada riwayat catatan poin disiplin ditemukan.
+                <!-- List Table -->
+                <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden transition-colors duration-200">
+                    <div class="border-b border-gray-200 dark:border-zinc-800 px-6 py-4 bg-gray-50/50 dark:bg-[#09090b]/40">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Riwayat Poin Kedisiplinan</h3>
                     </div>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
-                            <thead class="bg-gray-50 dark:bg-[#09090b]/40">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal</th>
-                                    <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Santri</th>
-                                    <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori / Judul</th>
-                                    <th scope="col" class="px-6 py-3.5 class text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tipe</th>
-                                    <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Poin</th>
-                                    <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Dicatat Oleh</th>
-                                    @if ($canManage)
-                                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Aksi</th>
-                                    @endif
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900 transition-colors duration-200">
-                                @foreach ($points as $item)
-                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                                        <!-- Tanggal -->
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-zinc-300">
-                                            {{ $item->date?->format('d/m/Y') }}
-                                        </td>
-                                        
-                                        <!-- Santri -->
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                                            <div>{{ $item->student?->name }}</div>
-                                            <div class="text-[10px] text-gray-400 font-medium">Kelas: {{ $item->student?->classRoom?->name ?? '-' }}</div>
-                                        </td>
 
-                                        <!-- Judul / Deskripsi -->
-                                        <td class="px-6 py-4 text-sm text-gray-700 dark:text-zinc-300">
-                                            <div class="font-medium text-gray-900 dark:text-zinc-200">{{ $item->title }}</div>
-                                            @if ($item->description)
-                                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1" title="{{ $item->description }}">{{ $item->description }}</p>
-                                            @endif
-                                        </td>
-
-                                        <!-- Tipe Badge -->
-                                        <td class="px-6 py-4 text-center whitespace-nowrap">
-                                            @if ($item->type === 'violation')
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 uppercase">
-                                                    Pelanggaran
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 uppercase">
-                                                    Penghargaan
-                                                </span>
-                                            @endif
-                                        </td>
-
-                                        <!-- Poin -->
-                                        <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-extrabold">
-                                            <span class="{{ $item->type === 'violation' ? 'text-red-600 dark:text-rose-500' : 'text-green-600 dark:text-emerald-500' }}">
-                                                {{ $item->type === 'violation' ? '-' : '+' }}{{ $item->points }}
-                                            </span>
-                                        </td>
-
-                                        <!-- Logger -->
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-zinc-400">
-                                            {{ $item->logger?->name ?? 'Sistem' }}
-                                        </td>
-
-                                        <!-- Aksi -->
+                    @if ($points->isEmpty())
+                        <div class="p-8 text-center text-sm text-gray-500 dark:text-zinc-500">
+                            Tidak ada riwayat catatan poin disiplin ditemukan.
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
+                                <thead class="bg-gray-50 dark:bg-[#09090b]/40">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Santri</th>
+                                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori / Judul</th>
+                                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tipe</th>
+                                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Poin</th>
+                                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Dicatat Oleh</th>
                                         @if ($canManage)
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                <div class="inline-flex gap-2">
-                                                    <a href="{{ route('student-points.edit', $item) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="Ubah">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.83 20.013a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                                        </svg>
-                                                    </a>
-                                                    
-                                                    <form method="POST" action="{{ route('student-points.destroy', $item) }}" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan poin ini?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 cursor-pointer" title="Hapus">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                                            </svg>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
+                                            <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Aksi</th>
                                         @endif
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    @if ($points->hasPages())
-                        <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-[#09090b]/40">
-                            {{ $points->links() }}
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900 transition-colors duration-200">
+                                    @foreach ($points as $item)
+                                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                                            <!-- Tanggal -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-zinc-300">
+                                                {{ $item->date?->format('d/m/Y') }}
+                                            </td>
+                                            
+                                            <!-- Santri -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                                                <div>{{ $item->student?->name }}</div>
+                                                <div class="text-[10px] text-gray-400 font-medium">Kelas: {{ $item->student?->classRoom?->name ?? '-' }}</div>
+                                            </td>
+
+                                            <!-- Judul / Deskripsi -->
+                                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-zinc-300">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    <span class="font-semibold text-gray-900 dark:text-zinc-200">{{ $item->title }}</span>
+                                                    @if($item->category)
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 dark:bg-rose-950/20 dark:text-rose-300 uppercase">
+                                                            {{ $item->category }}
+                                                        </span>
+                                                    @endif
+                                                    @if($item->achievement_type)
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700 dark:bg-emerald-950/20 dark:text-emerald-300 uppercase">
+                                                            {{ $item->achievement_type === 'academic' ? 'Akademik' : 'Non-Akademik' }}
+                                                        </span>
+                                                    @endif
+                                                    @if($item->achievement_level)
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-300 uppercase">
+                                                            {{ $item->achievement_level }}
+                                                        </span>
+                                                    @endif
+                                                    @if($item->location)
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-350">
+                                                            📍 {{ $item->location }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                @if ($item->description)
+                                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1" title="{{ $item->description }}">{{ $item->description }}</p>
+                                                @endif
+                                                @if ($item->sanction)
+                                                    <p class="text-xs text-amber-600 dark:text-amber-500 mt-1" title="Sanksi: {{ $item->sanction }}">
+                                                        <strong>Sanksi:</strong> {{ $item->sanction }}
+                                                    </p>
+                                                @endif
+                                            </td>
+
+                                            <!-- Tipe Badge -->
+                                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                                @if ($item->type === 'violation')
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 uppercase">
+                                                        Pelanggaran
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 uppercase">
+                                                        Penghargaan
+                                                    </span>
+                                                @endif
+                                            </td>
+
+                                            <!-- Poin -->
+                                            <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-extrabold">
+                                                <span class="{{ $item->type === 'violation' ? 'text-red-600 dark:text-rose-500' : 'text-green-600 dark:text-emerald-500' }}">
+                                                    {{ $item->type === 'violation' ? '-' : '+' }}{{ $item->points }}
+                                                </span>
+                                            </td>
+
+                                            <!-- Logger -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-zinc-400">
+                                                {{ $item->logger?->name ?? 'Sistem' }}
+                                            </td>
+
+                                            <!-- Aksi -->
+                                            @if ($canManage)
+                                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                    <div class="inline-flex gap-2">
+                                                        <a href="{{ route('student-points.edit', $item) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="Ubah">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.83 20.013a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                                            </svg>
+                                                        </a>
+                                                        
+                                                        <form method="POST" action="{{ route('student-points.destroy', $item) }}" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan poin ini?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 cursor-pointer" title="Hapus">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                                </svg>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            @endif
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
+                        @if ($points->hasPages())
+                            <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-[#09090b]/40">
+                                {{ $points->links() }}
+                            </div>
+                        @endif
                     @endif
-                @endif
+                </div>
+            </div>
+
+            <!-- Dashboard Visual Tab Content -->
+            <div x-show="tab === 'dashboard'" x-transition class="space-y-6">
+                <!-- Top Aggregates -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Kategori Pelanggaran -->
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <span class="text-red-500">⚠️</span> Poin Pelanggaran per Kategori
+                        </h4>
+                        <div class="space-y-4">
+                            @foreach(['ringan' => 'Ringan', 'sedang' => 'Sedang', 'berat' => 'Berat'] as $key => $label)
+                                @php
+                                    $data = $violationsByCategory->get($key);
+                                    $cnt = $data?->count ?? 0;
+                                    $pts = $data?->points ?? 0;
+                                    $maxPts = max(1, $totalViolations);
+                                    $pct = round(($pts / $maxPts) * 100);
+                                @endphp
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-xs font-semibold">
+                                        <span class="text-gray-700 dark:text-zinc-350">{{ $label }}</span>
+                                        <span class="text-red-600 dark:text-rose-400">{{ $pts }} Poin ({{ $cnt }} Kasus)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-rose-500 to-red-600 rounded-full" style="width: {{ $pct }}%"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Kategori Penghargaan / Tingkatan -->
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <span class="text-green-500">🏆</span> Poin Prestasi per Tingkat
+                        </h4>
+                        <div class="space-y-4">
+                            @foreach(['school' => 'Tingkat Sekolah', 'district' => 'Kabupaten/Kota', 'province' => 'Provinsi', 'national' => 'Nasional'] as $key => $label)
+                                @php
+                                    $data = $rewardsByLevel->get($key);
+                                    $cnt = $data?->count ?? 0;
+                                    $pts = $data?->points ?? 0;
+                                    $maxPts = max(1, $totalRewards);
+                                    $pct = round(($pts / $maxPts) * 100);
+                                @endphp
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-xs font-semibold">
+                                        <span class="text-gray-700 dark:text-zinc-350">{{ $label }}</span>
+                                        <span class="text-emerald-600 dark:text-emerald-400">{{ $pts }} Poin ({{ $cnt }} Prestasi)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style="width: {{ $pct }}%"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <!-- Peta Lokasi Kejadian (Heatmap List) -->
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm md:col-span-1">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <span class="text-indigo-500">📍</span> Lokasi Kejadian Terbanyak
+                        </h4>
+                        @if($violationsByLocation->isEmpty())
+                            <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-6">Belum ada lokasi tercatat.</p>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($violationsByLocation as $loc)
+                                    <div class="flex justify-between items-center text-xs font-semibold">
+                                        <span class="text-gray-700 dark:text-zinc-300 bg-gray-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg">
+                                            {{ $loc->location }}
+                                        </span>
+                                        <span class="text-rose-600 dark:text-rose-400 font-bold">{{ $loc->count }} kali ({{ $loc->points }} Poin)</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Top 5 Santri Pelanggaran Terbanyak -->
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm md:col-span-1">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <span class="text-red-500">🚨</span> Pelanggar Terbanyak
+                        </h4>
+                        @if($topViolators->isEmpty())
+                            <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-6">Belum ada data pelanggaran.</p>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($topViolators as $student)
+                                    <div class="flex justify-between items-center text-xs">
+                                        <span class="font-semibold text-gray-800 dark:text-zinc-200">{{ $student->name }}</span>
+                                        <span class="text-red-600 dark:text-rose-500 font-bold bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded">{{ $student->total_points }} Poin</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Top 5 Santri Berprestasi Terbanyak -->
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm md:col-span-1">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <span class="text-green-500">🎖️</span> Prestasi Tertinggi
+                        </h4>
+                        @if($topAchievers->isEmpty())
+                            <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-6">Belum ada data prestasi.</p>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($topAchievers as $student)
+                                    <div class="flex justify-between items-center text-xs">
+                                        <span class="font-semibold text-gray-800 dark:text-zinc-200">{{ $student->name }}</span>
+                                        <span class="text-green-600 dark:text-emerald-500 font-bold bg-green-50 dark:bg-green-950/20 px-2 py-0.5 rounded">+{{ $student->total_points }} Poin</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                </div>
             </div>
 
         </div>

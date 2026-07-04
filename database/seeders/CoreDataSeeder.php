@@ -53,9 +53,9 @@ class CoreDataSeeder extends Seeder
         $studentUser = User::where('username', 'santri')->firstOrFail();
 
         $student = Student::updateOrCreate(
-            ['student_number' => 'SNT-001'],
+            ['user_id' => $studentUser->id],
             [
-                'user_id' => $studentUser->id,
+                'student_number' => 'SNT-001',
                 'class_room_id' => $classRoom->id,
                 'teacher_id' => $teacherProfile->id,
                 'name' => 'Santri HafizPlus',

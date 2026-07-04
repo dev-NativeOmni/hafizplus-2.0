@@ -67,18 +67,40 @@ class AdabController extends Controller
             $student->average_adab_score = AdabRecord::where('student_id', $student->id)->avg('total_score') ?? 0;
         }
 
-        return view('adab.index', compact('students', 'classRooms', 'isAdmin', 'isSupervisor', 'today'));
+        // Get all visible student IDs for dashboard statistics
+        $allVisibleStudentIds = (clone $studentQuery)->pluck('id');
+        $adabStats = AdabRecord::whereIn('student_id', $allVisibleStudentIds)->get();
+
+        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0;
+        if ($adabStats->isNotEmpty()) {
+            $avgAllah = round(($adabStats->avg(fn($r) => ($r->q1 + $r->q2 + $r->q3 + $r->q4 + $r->q5) / 5)) * 100, 1);
+            $avgRasul = round(($adabStats->avg(fn($r) => ($r->q6 + $r->q7 + $r->q8 + $r->q9 + $r->q10) / 5)) * 100, 1);
+            $avgSosial = round(($adabStats->avg(fn($r) => ($r->q11 + $r->q12 + $r->q13 + $r->q14 + $r->q15) / 5)) * 100, 1);
+            $avgQuran = round(($adabStats->avg(fn($r) => ($r->q16 + $r->q17 + $r->q18 + $r->q19 + $r->q20) / 5)) * 100, 1);
+        }
+
+        $classRankings = ClassRoom::query()
+            ->join('students', 'class_rooms.id', '=', 'students.class_room_id')
+            ->join('adab_records', 'students.id', '=', 'adab_records.student_id')
+            ->selectRaw('class_rooms.name, avg(adab_records.total_score) as avg_score')
+            ->groupBy('class_rooms.id', 'class_rooms.name')
+            ->orderByDesc('avg_score')
+            ->limit(5)
+            ->get();
+
+        return view('adab.index', compact('students', 'classRooms', 'isAdmin', 'isSupervisor', 'today', 'avgAllah', 'avgRasul', 'avgSosial', 'avgQuran', 'classRankings'));
     }
 
     public function create(Student $student): View|RedirectResponse
     {
         $user = Auth::user();
         
-        // Authorize: Only student themselves, or Admin/Supervisor
+        // Authorize: Student themselves, Admin/Supervisor, or student's teacher
         $isOwn = $user->hasRole('student') && $student->user_id === $user->id;
         $isManager = $user->hasAnyRole(['super_admin', 'admin', 'supervisor']);
+        $isTeacher = $user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id;
         
-        abort_unless($isOwn || $isManager, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
+        abort_unless($isOwn || $isManager || $isTeacher, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
 
         // Check if already filled today
         $today = now()->toDateString();
@@ -99,11 +121,12 @@ class AdabController extends Controller
     {
         $user = Auth::user();
         
-        // Authorize: Only student themselves, or Admin/Supervisor
+        // Authorize: Student themselves, Admin/Supervisor, or student's teacher
         $isOwn = $user->hasRole('student') && $student->user_id === $user->id;
         $isManager = $user->hasAnyRole(['super_admin', 'admin', 'supervisor']);
+        $isTeacher = $user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id;
         
-        abort_unless($isOwn || $isManager, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
+        abort_unless($isOwn || $isManager || $isTeacher, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
 
         $rules = [];
         for ($i = 1; $i <= 20; $i++) {

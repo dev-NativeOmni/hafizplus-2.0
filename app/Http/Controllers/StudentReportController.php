@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Student;
+use App\Models\StudentPoint;
+use App\Models\AdabRecord;
+use App\Models\StudentReport;
+use App\Models\ClassRoom;
+use App\Models\HafalanRecord;
+use App\Models\MurajaahRecord;
+use App\Models\HafalanTarget;
+use App\Services\StudentProgressService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class StudentReportController extends Controller
+{
+    public function __construct(
+        protected StudentProgressService $progressService
+    ) {
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        
+        $visibleStudentQuery = $this->progressService->visibleStudentQuery($user);
+
+        if ($request->filled('class_room_id')) {
+            $visibleStudentQuery->where('class_room_id', $request->integer('class_room_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $visibleStudentQuery->where('name', 'like', "%{$search}%");
+        }
+
+        $students = $visibleStudentQuery->with(['classRoom'])->orderBy('name')->paginate(15)->withQueryString();
+        
+        $classRooms = ClassRoom::query()->orderBy('name')->get();
+
+        return view('reports.digital-report-index', compact('students', 'classRooms'));
+    }
+
+    public function show(Student $student, Request $request)
+    {
+        $user = $request->user();
+        
+        // Authorize
+        $canView = $this->progressService->visibleStudentQuery($user)
+            ->where('id', $student->id)
+            ->exists();
+        abort_unless($canView, 403);
+
+        $student->load(['classRoom.program', 'teacher.user', 'parents.user']);
+
+        // Academic settings (default to 2025/2026 and semester 1)
+        $academicYear = $request->input('academic_year', '2025/2026');
+        $semester = $request->integer('semester', 1);
+
+        // 1. TAHFIZH PROGRESS
+        $progress = $this->progressService->calculate($student);
+        $totalSetoran = HafalanRecord::where('student_id', $student->id)->where('status', 'passed')->count();
+        $totalMurajaah = MurajaahRecord::where('student_id', $student->id)->where('status', 'passed')->count();
+
+        // 2. ADAB AVERAGES (aspects)
+        $adabRecords = AdabRecord::where('student_id', $student->id)->get();
+        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0; $avgTotal = 0;
+        if ($adabRecords->isNotEmpty()) {
+            $avgAllah = round(($adabRecords->avg(fn($r) => ($r->q1+$r->q2+$r->q3+$r->q4+$r->q5)/5)) * 100, 1);
+            $avgRasul = round(($adabRecords->avg(fn($r) => ($r->q6+$r->q7+$r->q8+$r->q9+$r->q10)/5)) * 100, 1);
+            $avgSosial = round(($adabRecords->avg(fn($r) => ($r->q11+$r->q12+$r->q13+$r->q14+$r->q15)/5)) * 100, 1);
+            $avgQuran = round(($adabRecords->avg(fn($r) => ($r->q16+$r->q17+$r->q18+$r->q19+$r->q20)/5)) * 100, 1);
+            $avgTotal = round($adabRecords->avg('total_score'), 1);
+        }
+
+        // 3. TANSE DISCIPLINE & AWARDS
+        $violations = StudentPoint::where('student_id', $student->id)->where('type', 'violation')->get();
+        $rewards = StudentPoint::where('student_id', $student->id)->where('type', 'reward')->get();
+
+        // 4. GET REPORT RECORD
+        $report = StudentReport::firstOrCreate([
+            'student_id' => $student->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+        ], [
+            'status' => 'draft',
+        ]);
+
+        $canEditNotes = $user->hasAnyRole(['super_admin', 'admin', 'teacher']) && $report->status !== 'locked';
+
+        return view('reports.digital-report', compact(
+            'student',
+            'academicYear',
+            'semester',
+            'progress',
+            'totalSetoran',
+            'totalMurajaah',
+            'avgAllah',
+            'avgRasul',
+            'avgSosial',
+            'avgQuran',
+            'avgTotal',
+            'violations',
+            'rewards',
+            'report',
+            'canEditNotes'
+        ));
+    }
+
+    public function update(Request $request, Student $student)
+    {
+        $user = $request->user();
+        abort_unless($user->hasAnyRole(['super_admin', 'admin', 'teacher']), 403);
+
+        $validated = $request->validate([
+            'academic_year' => 'required|string',
+            'semester' => 'required|integer|in:1,2',
+            'teacher_notes' => 'nullable|string',
+            'status' => 'required|string|in:draft,published,locked',
+        ]);
+
+        $report = StudentReport::updateOrCreate([
+            'student_id' => $student->id,
+            'academic_year' => $validated['academic_year'],
+            'semester' => $validated['semester'],
+        ], [
+            'teacher_notes' => $validated['teacher_notes'],
+            'status' => $validated['status'],
+            'created_by' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Catatan rapor digital berhasil diperbarui.');
+    }
+
+    public function print(Student $student, Request $request)
+    {
+        $user = $request->user();
+        $canView = $this->progressService->visibleStudentQuery($user)
+            ->where('id', $student->id)
+            ->exists();
+        abort_unless($canView, 403);
+
+        $student->load(['classRoom.program', 'teacher.user', 'parents.user']);
+
+        $academicYear = $request->input('academic_year', '2025/2026');
+        $semester = $request->integer('semester', 1);
+
+        // Tahfizh
+        $progress = $this->progressService->calculate($student);
+        $hafalanRecords = HafalanRecord::with('surah')->where('student_id', $student->id)->where('status', 'passed')->latest()->limit(5)->get();
+        $murajaahRecords = MurajaahRecord::with('surah')->where('student_id', $student->id)->where('status', 'passed')->latest()->limit(5)->get();
+
+        // Adab
+        $adabRecords = AdabRecord::where('student_id', $student->id)->get();
+        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0; $avgTotal = 0;
+        if ($adabRecords->isNotEmpty()) {
+            $avgAllah = round(($adabRecords->avg(fn($r) => ($r->q1+$r->q2+$r->q3+$r->q4+$r->q5)/5)) * 100, 1);
+            $avgRasul = round(($adabRecords->avg(fn($r) => ($r->q6+$r->q7+$r->q8+$r->q9+$r->q10)/5)) * 100, 1);
+            $avgSosial = round(($adabRecords->avg(fn($r) => ($r->q11+$r->q12+$r->q13+$r->q14+$r->q15)/5)) * 100, 1);
+            $avgQuran = round(($adabRecords->avg(fn($r) => ($r->q16+$r->q17+$r->q18+$r->q19+$r->q20)/5)) * 100, 1);
+            $avgTotal = round($adabRecords->avg('total_score'), 1);
+        }
+
+        // Tanse
+        $violations = StudentPoint::where('student_id', $student->id)->where('type', 'violation')->get();
+        $rewards = StudentPoint::where('student_id', $student->id)->where('type', 'reward')->get();
+
+        $report = StudentReport::where([
+            'student_id' => $student->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+        ])->first();
+
+        return view('reports.digital-report-print', compact(
+            'student',
+            'academicYear',
+            'semester',
+            'progress',
+            'hafalanRecords',
+            'murajaahRecords',
+            'avgAllah',
+            'avgRasul',
+            'avgSosial',
+            'avgQuran',
+            'avgTotal',
+            'violations',
+            'rewards',
+            'report'
+        ));
+    }
+}

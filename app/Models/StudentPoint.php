@@ -14,8 +14,13 @@ class StudentPoint extends Model
         'student_id',
         'type',
         'points',
+        'category',
         'title',
         'description',
+        'sanction',
+        'achievement_type',
+        'achievement_level',
+        'location',
         'date',
         'logged_by',
     ];

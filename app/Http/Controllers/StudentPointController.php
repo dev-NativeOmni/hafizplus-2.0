@@ -7,6 +7,7 @@ use App\Models\StudentPoint;
 use App\Models\ParentProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\SystemNotification;
 
 class StudentPointController extends Controller
 {
@@ -55,10 +56,62 @@ class StudentPointController extends Controller
         $totalViolations = (clone $statsQuery)->where('type', 'violation')->sum('points');
         $totalRewards = (clone $statsQuery)->where('type', 'reward')->sum('points');
 
+        // Extended dashboard statistics
+        $violationsByCategory = (clone $statsQuery)
+            ->where('type', 'violation')
+            ->selectRaw('category, count(*) as count, sum(points) as points')
+            ->groupBy('category')
+            ->get()
+            ->keyBy('category');
+
+        $violationsByLocation = (clone $statsQuery)
+            ->where('type', 'violation')
+            ->selectRaw('location, count(*) as count, sum(points) as points')
+            ->whereNotNull('location')
+            ->where('location', '!=', '')
+            ->groupBy('location')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        $rewardsByLevel = (clone $statsQuery)
+            ->where('type', 'reward')
+            ->selectRaw('achievement_level, count(*) as count, sum(points) as points')
+            ->whereNotNull('achievement_level')
+            ->groupBy('achievement_level')
+            ->get()
+            ->keyBy('achievement_level');
+
+        // Top Students (Violations vs Rewards)
+        $topAchievers = Student::query()
+            ->select('students.id', 'students.name')
+            ->join('student_points', 'students.id', '=', 'student_points.student_id')
+            ->where('student_points.type', 'reward')
+            ->selectRaw('sum(student_points.points) as total_points')
+            ->groupBy('students.id', 'students.name')
+            ->orderByDesc('total_points')
+            ->limit(5)
+            ->get();
+
+        $topViolators = Student::query()
+            ->select('students.id', 'students.name')
+            ->join('student_points', 'students.id', '=', 'student_points.student_id')
+            ->where('student_points.type', 'violation')
+            ->selectRaw('sum(student_points.points) as total_points')
+            ->groupBy('students.id', 'students.name')
+            ->orderByDesc('total_points')
+            ->limit(5)
+            ->get();
+
         return view('student-points.index', [
             'points' => $points,
             'totalViolations' => $totalViolations,
             'totalRewards' => $totalRewards,
+            'violationsByCategory' => $violationsByCategory,
+            'violationsByLocation' => $violationsByLocation,
+            'rewardsByLevel' => $rewardsByLevel,
+            'topAchievers' => $topAchievers,
+            'topViolators' => $topViolators,
             'canManage' => $user->hasAnyRole(['super_admin', 'admin', 'tanse']),
         ]);
     }
@@ -81,14 +134,23 @@ class StudentPointController extends Controller
             'student_id' => 'required|exists:students,id',
             'type' => 'required|in:violation,reward',
             'points' => 'required|integer|min:1|max:1000',
+            'category' => 'nullable|string|max:50',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'sanction' => 'nullable|string',
+            'achievement_type' => 'nullable|in:academic,non-academic',
+            'achievement_level' => 'nullable|in:school,district,province,national',
+            'location' => 'nullable|string|max:255',
             'date' => 'required|date',
         ]);
 
         $validated['logged_by'] = Auth::id();
 
-        StudentPoint::create($validated);
+        $point = StudentPoint::create($validated);
+
+        if ($point->type === 'violation') {
+            $this->checkThresholds($point->student_id);
+        }
 
         return redirect()
             ->route('student-points.index')
@@ -112,12 +174,21 @@ class StudentPointController extends Controller
             'student_id' => 'required|exists:students,id',
             'type' => 'required|in:violation,reward',
             'points' => 'required|integer|min:1|max:1000',
+            'category' => 'nullable|string|max:50',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'sanction' => 'nullable|string',
+            'achievement_type' => 'nullable|in:academic,non-academic',
+            'achievement_level' => 'nullable|in:school,district,province,national',
+            'location' => 'nullable|string|max:255',
             'date' => 'required|date',
         ]);
 
         $studentPoint->update($validated);
+
+        if ($studentPoint->type === 'violation') {
+            $this->checkThresholds($studentPoint->student_id);
+        }
 
         return redirect()
             ->route('student-points.index')
@@ -133,6 +204,46 @@ class StudentPointController extends Controller
         return redirect()
             ->route('student-points.index')
             ->with('success', 'Catatan poin kedisiplinan berhasil dihapus.');
+    }
+
+    private function checkThresholds(int $studentId): void
+    {
+        $totalViolations = StudentPoint::where('student_id', $studentId)->where('type', 'violation')->sum('points');
+        $thresholds = [50, 100, 150, 200];
+        
+        foreach ($thresholds as $threshold) {
+            if ($totalViolations >= $threshold) {
+                $uniqueHash = "student_points_warning_{$studentId}_{$threshold}";
+                
+                $student = Student::with(['parents.user', 'teacher.user', 'user'])->find($studentId);
+                if (!$student) continue;
+
+                $usersToNotify = collect();
+                if ($student->user) $usersToNotify->push($student->user);
+                foreach ($student->parents as $parent) {
+                    if ($parent->user) $usersToNotify->push($parent->user);
+                }
+                if ($student->teacher && $student->teacher->user) {
+                    $usersToNotify->push($student->teacher->user);
+                }
+
+                foreach ($usersToNotify as $user) {
+                    $userSpecificHash = $uniqueHash . '_' . $user->id;
+                    if (!SystemNotification::where('unique_hash', $userSpecificHash)->exists()) {
+                        SystemNotification::create([
+                            'user_id' => $user->id,
+                            'created_by' => Auth::id(),
+                            'unique_hash' => $userSpecificHash,
+                            'title' => 'Ambang Batas Pelanggaran Terlampaui',
+                            'message' => "Poin pelanggaran santri {$student->name} telah mencapai {$totalViolations} (Ambang batas: {$threshold} poin). Sanksi dan pembinaan diperlukan.",
+                            'type' => 'warning',
+                            'action_url' => '/student-points',
+                            'published_at' => now(),
+                        ]);
+                    }
+                }
+            }
+        }
     }
 
     private function authorizeManagement()

@@ -22,6 +22,7 @@ use App\Http\Controllers\AdabController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StudentPointController;
+use App\Http\Controllers\StudentReportController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 
@@ -283,6 +284,21 @@ Route::middleware(['auth'])->group(function () {
         Route::middleware(['role:super_admin,admin,supervisor'])->group(function () {
             Route::delete('/adab/{adabRecord}', [AdabController::class, 'destroy'])->name('adab.destroy');
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rapor Digital Terpadu
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh'])->group(function () {
+        Route::get('/digital-reports', [StudentReportController::class, 'index'])->name('digital-reports.index');
+        Route::get('/digital-reports/student/{student}', [StudentReportController::class, 'show'])->name('digital-reports.show');
+        Route::get('/digital-reports/student/{student}/print', [StudentReportController::class, 'print'])->name('digital-reports.print');
+    });
+
+    Route::middleware(['role:super_admin,admin,teacher'])->group(function () {
+        Route::post('/digital-reports/student/{student}', [StudentReportController::class, 'update'])->name('digital-reports.update');
     });
 });
 

@@ -80,11 +80,13 @@ class TeacherPerformanceTest extends TestCase
         
         // Find or create a teacher profile
         $teacherUser = User::where('username', 'guru')->first();
-        $teacherProfile = TeacherProfile::create([
-            'user_id' => $teacherUser->id,
-            'phone' => '0812345678',
-            'address' => 'Jl. Tahfidz No. 1'
-        ]);
+        $teacherProfile = TeacherProfile::updateOrCreate(
+            ['user_id' => $teacherUser->id],
+            [
+                'phone' => '0812345678',
+                'address' => 'Jl. Tahfidz No. 1'
+            ]
+        );
 
         $program = Program::create([
             'name' => 'Reguler',

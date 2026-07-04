@@ -76,7 +76,7 @@
                                 <th class="px-4 py-3">Orangtua/Wali</th>
                                 <th class="px-4 py-3">Telepon</th>
                                 <th class="px-4 py-3">Alamat</th>
-                                <th class="px-4 py-3">Jumlah Santri</th>
+                                <th class="px-4 py-3">Santri Terhubung</th>
                                 <th class="px-4 py-3">Status</th>
                                 <th class="px-4 py-3 text-right">Aksi</th>
                             </tr>
@@ -103,7 +103,17 @@
                                     </td>
 
                                     <td class="px-4 py-3 text-gray-700">
-                                        {{ $parent->students_count }}
+                                        @if($parent->students->isNotEmpty())
+                                            <div class="flex flex-col gap-1">
+                                                @foreach($parent->students as $student)
+                                                    <a href="{{ route('students.show', $student) }}" class="text-xs font-semibold text-indigo-600 hover:underline bg-indigo-50 px-2 py-0.5 rounded w-max">
+                                                        {{ $student->name }} ({{ $student->pivot?->relation ?: 'Wali' }})
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-gray-400 italic">Belum terhubung</span>
+                                        @endif
                                     </td>
 
                                     <td class="px-4 py-3">

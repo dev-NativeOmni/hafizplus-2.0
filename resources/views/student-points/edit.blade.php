@@ -17,7 +17,7 @@
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Ubah Catatan Kedisiplinan</h3>
                 </div>
 
-                <form method="POST" action="{{ route('student-points.update', $studentPoint) }}" class="p-6 space-y-6">
+                <form method="POST" action="{{ route('student-points.update', $studentPoint) }}" class="p-6 space-y-6" x-data="{ type: '{{ old('type', $studentPoint->type) }}' }">
                     @csrf
                     @method('PUT')
 
@@ -52,6 +52,7 @@
                             <select
                                 name="type"
                                 id="type"
+                                x-model="type"
                                 required
                                 class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             >
@@ -79,6 +80,109 @@
                                 class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             />
                             @error('points')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Violation specific fields -->
+                    <div x-show="type === 'violation'" x-transition class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Category Select -->
+                            <div class="space-y-2">
+                                <label for="category" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                    Kategori Pelanggaran
+                                </label>
+                                <select
+                                    name="category"
+                                    id="category"
+                                    class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                >
+                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="ringan" {{ old('category', $studentPoint->category) === 'ringan' ? 'selected' : '' }}>Ringan</option>
+                                    <option value="sedang" {{ old('category', $studentPoint->category) === 'sedang' ? 'selected' : '' }}>Sedang</option>
+                                    <option value="berat" {{ old('category', $studentPoint->category) === 'berat' ? 'selected' : '' }}>Berat</option>
+                                </select>
+                                @error('category')
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Location Input -->
+                            <div class="space-y-2">
+                                <label for="location" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                    Lokasi Kejadian
+                                </label>
+                                <input
+                                    type="text"
+                                    name="location"
+                                    id="location"
+                                    value="{{ old('location', $studentPoint->location) }}"
+                                    placeholder="Contoh: Masjid, Kelas, Asrama"
+                                    class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                                @error('location')
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Sanction Textarea -->
+                        <div class="space-y-2">
+                            <label for="sanction" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                Sanksi yang Diberikan
+                            </label>
+                            <textarea
+                                name="sanction"
+                                id="sanction"
+                                rows="3"
+                                placeholder="Ketik detail sanksi atau tindakan pembinaan yang diberikan..."
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            >{{ old('sanction', $studentPoint->sanction) }}</textarea>
+                            @error('sanction')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Reward specific fields -->
+                    <div x-show="type === 'reward'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Achievement Type Select -->
+                        <div class="space-y-2">
+                            <label for="achievement_type" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                Tipe Prestasi
+                            </label>
+                            <select
+                                name="achievement_type"
+                                id="achievement_type"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            >
+                                <option value="">-- Pilih Tipe --</option>
+                                <option value="academic" {{ old('achievement_type', $studentPoint->achievement_type) === 'academic' ? 'selected' : '' }}>Akademik</option>
+                                <option value="non-academic" {{ old('achievement_type', $studentPoint->achievement_type) === 'non-academic' ? 'selected' : '' }}>Non-Akademik</option>
+                            </select>
+                            @error('achievement_type')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Achievement Level Select -->
+                        <div class="space-y-2">
+                            <label for="achievement_level" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                Tingkat Prestasi
+                            </label>
+                            <select
+                                name="achievement_level"
+                                id="achievement_level"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            >
+                                <option value="">-- Pilih Tingkat --</option>
+                                <option value="school" {{ old('achievement_level', $studentPoint->achievement_level) === 'school' ? 'selected' : '' }}>Sekolah</option>
+                                <option value="district" {{ old('achievement_level', $studentPoint->achievement_level) === 'district' ? 'selected' : '' }}>Kabupaten/Kota</option>
+                                <option value="province" {{ old('achievement_level', $studentPoint->achievement_level) === 'province' ? 'selected' : '' }}>Provinsi</option>
+                                <option value="national" {{ old('achievement_level', $studentPoint->achievement_level) === 'national' ? 'selected' : '' }}>Nasional</option>
+                            </select>
+                            @error('achievement_level')
                                 <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                             @enderror
                         </div>

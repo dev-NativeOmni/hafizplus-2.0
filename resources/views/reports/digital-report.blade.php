@@ -1,0 +1,321 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex flex-col gap-1">
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-zinc-200 leading-tight">
+                    Rapor Digital Terpadu Santri
+                </h2>
+                <p class="text-sm text-gray-500">
+                    Kompilasi perkembangan Tahfizh, Adab, dan Tanse dalam satu dokumen terpadu.
+                </p>
+            </div>
+            
+            <div class="flex gap-2">
+                <a href="{{ route('digital-reports.index') }}" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
+                    Kembali
+                </a>
+                <a 
+                    href="{{ route('digital-reports.print', [$student, 'academic_year' => $academicYear, 'semester' => $semester]) }}" 
+                    target="_blank"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition"
+                >
+                    🖨️ Cetak / Simpan PDF
+                </a>
+            </div>
+        </div>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            @if (session('success'))
+                <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-300 text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            <!-- Profile and Semester Selector -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Profile Card -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between lg:col-span-2">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Santri yang Dipantau</span>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1">{{ $student->name }}</h3>
+                        <p class="text-sm text-gray-500 mt-0.5">NIS: {{ $student->student_number ?: '-' }}</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm">
+                            <div>
+                                <span class="block text-gray-400">Kelas</span>
+                                <span class="font-semibold text-gray-900 dark:text-zinc-200">{{ $student->classRoom?->name ?: '-' }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-gray-400">Program</span>
+                                <span class="font-semibold text-gray-900 dark:text-zinc-200">{{ $student->classRoom?->program?->name ?: '-' }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-gray-400">Pembimbing</span>
+                                <span class="font-semibold text-gray-900 dark:text-zinc-200">{{ $student->teacher?->user?->name ?: '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Semester Selector -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm lg:col-span-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Filter Periode Akademik</span>
+                    <form method="GET" action="{{ route('digital-reports.show', $student) }}" class="space-y-4 mt-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Tahun Ajaran</label>
+                            <select name="academic_year" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                                <option value="2025/2026" {{ $academicYear === '2025/2026' ? 'selected' : '' }}>2025/2026</option>
+                                <option value="2026/2027" {{ $academicYear === '2026/2027' ? 'selected' : '' }}>2026/2027</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Semester</label>
+                            <select name="semester" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                                <option value="1" {{ $semester === 1 ? 'selected' : '' }}>1 (Ganjil)</option>
+                                <option value="2" {{ $semester === 2 ? 'selected' : '' }}>2 (Genap)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 bg-zinc-800 hover:bg-zinc-950 dark:bg-zinc-700 dark:hover:bg-zinc-650 text-white font-bold rounded-xl text-sm transition">
+                            Terapkan Periode
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Unified Report Summary Sections -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Module 1: Tahfizh -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <span class="text-indigo-500">📖</span> Perkembangan Tahfizh
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs text-gray-500">Progress Hafalan Quran</span>
+                            <span class="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">{{ number_format($progress['progress_percent'] ?? 0, 2) }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-600 rounded-full" style="width: {{ min(100, max(0, $progress['progress_percent'] ?? 0)) }}%"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 pt-2 text-xs text-center">
+                            <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800">
+                                <span class="block text-gray-400">Total Setoran</span>
+                                <span class="text-base font-bold text-gray-900 dark:text-zinc-200">{{ $totalSetoran }}</span>
+                            </div>
+                            <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800">
+                                <span class="block text-gray-400">Total Murajaah</span>
+                                <span class="text-base font-bold text-gray-900 dark:text-zinc-200">{{ $totalMurajaah }}</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs">
+                            <span class="block text-gray-400 mb-1">Rerata Nilai Setoran</span>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700 dark:text-zinc-300">Skala 1-100</span>
+                                <span class="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                                    {{ $progress['average_hafalan_score'] > 0 ? round($progress['average_hafalan_score'], 1) : '-' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module 2: Adab & Akhlak -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <span class="text-teal-500">🕋</span> Kepatuhan Adab Harian
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs text-gray-500">Skor Rerata Adab</span>
+                            <span class="text-xl font-extrabold text-teal-600 dark:text-teal-400">{{ $avgTotal }} / 100</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                            <div class="h-full bg-teal-600 rounded-full" style="width: {{ $avgTotal }}%"></div>
+                        </div>
+
+                        <div class="space-y-2 text-xs pt-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Adab kpd Allah</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgAllah }}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Adab kpd Rasulullah</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgRasul }}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Adab Pergaulan (Sosial)</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgSosial }}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Adab kpd Al-Qur'an</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgQuran }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module 3: Tanse Disiplin -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <span class="text-red-500">⚠️</span> Kedisiplinan & Prestasi (Tanse)
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-rose-50 dark:bg-rose-950/20 rounded-xl p-4 border border-rose-100 dark:border-rose-900/30">
+                                <span class="block text-xs text-rose-500 uppercase font-bold tracking-wider">Pelanggaran</span>
+                                <span class="text-2xl font-black text-rose-700 dark:text-rose-400 mt-1 block">{{ $violations->sum('points') }} Poin</span>
+                                <span class="text-[10px] text-rose-400 dark:text-rose-500 block mt-1">{{ $violations->count() }} Kasus</span>
+                            </div>
+                            <div class="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/30">
+                                <span class="block text-xs text-emerald-500 uppercase font-bold tracking-wider">Penghargaan</span>
+                                <span class="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1 block">+{{ $rewards->sum('points') }} Poin</span>
+                                <span class="text-[10px] text-emerald-400 dark:text-emerald-500 block mt-1">{{ $rewards->count() }} Penghargaan</span>
+                            </div>
+                        </div>
+
+                        <!-- Balance indicator -->
+                        @php $bal = $rewards->sum('points') - $violations->sum('points'); @endphp
+                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Selisih Poin (Net)</span>
+                                <span class="font-black text-sm {{ $bal >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-rose-400' }}">
+                                    {{ $bal > 0 ? '+' : '' }}{{ $bal }} Poin
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Detailed Logs (Violations & Rewards) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Violations Log -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <span class="text-red-500">🚨</span> Catatan Pelanggaran Tata Tertib
+                    </h4>
+                    @if($violations->isEmpty())
+                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-8 italic">Tidak ada catatan pelanggaran.</p>
+                    @else
+                        <div class="space-y-4 max-h-[300px] overflow-y-auto">
+                            @foreach($violations as $v)
+                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs relative">
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span class="text-gray-800 dark:text-zinc-250">{{ $v->title }}</span>
+                                        <span class="text-red-600 dark:text-rose-400 font-extrabold">-{{ $v->points }} Poin</span>
+                                    </div>
+                                    <p class="text-gray-500 dark:text-zinc-400 text-[11px] mb-2">{{ $v->description ?: 'Tanpa deskripsi.' }}</p>
+                                    <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold border-t dark:border-zinc-800 pt-1.5">
+                                        <span>📍 {{ $v->location ?: '-' }} · Kategori: {{ ucfirst((string) $v->category) ?: '-' }}</span>
+                                        <span>{{ $v->date?->format('d M Y') }}</span>
+                                    </div>
+                                    @if($v->sanction)
+                                        <div class="mt-2 p-1.5 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded text-[10px]">
+                                            <strong>Sanksi:</strong> {{ $v->sanction }}
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Rewards Log -->
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <span class="text-green-500">🏆</span> Catatan Penghargaan & Prestasi
+                    </h4>
+                    @if($rewards->isEmpty())
+                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-8 italic">Tidak ada catatan penghargaan.</p>
+                    @else
+                        <div class="space-y-4 max-h-[300px] overflow-y-auto">
+                            @foreach($rewards as $r)
+                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs relative">
+                                    <div class="flex justify-between font-bold mb-1">
+                                        <span class="text-gray-800 dark:text-zinc-250">{{ $r->title }}</span>
+                                        <span class="text-green-600 dark:text-emerald-400 font-extrabold">+{{ $r->points }} Poin</span>
+                                    </div>
+                                    <p class="text-gray-500 dark:text-zinc-400 text-[11px] mb-2">{{ $r->description ?: 'Tanpa deskripsi.' }}</p>
+                                    <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold border-t dark:border-zinc-800 pt-1.5">
+                                        <span>Tingkat: {{ ucfirst((string) $r->achievement_level) ?: '-' }} · Tipe: {{ $r->achievement_type === 'academic' ? 'Akademik' : 'Non-Akademik' }}</span>
+                                        <span>{{ $r->date?->format('d M Y') }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Wali Kelas / Teacher Review & Status -->
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2">
+                    📝 Catatan Evaluasi Wali Kelas & Otorisasi Rapor
+                </h4>
+
+                @if($canEditNotes)
+                    <form method="POST" action="{{ route('digital-reports.update', $student) }}" class="space-y-4">
+                        @csrf
+                        <input type="hidden" name="academic_year" value="{{ $academicYear }}" />
+                        <input type="hidden" name="semester" value="{{ $semester }}" />
+
+                        <div>
+                            <label for="teacher_notes" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-2">Narasi Deskriptif / Evaluasi Karakter Wali Kelas</label>
+                            <textarea 
+                                name="teacher_notes" 
+                                id="teacher_notes" 
+                                rows="4" 
+                                placeholder="Ketik catatan evaluasi perkembangan belajar dan karakter mulia santri di sini..."
+                                class="w-full rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                            >{{ old('teacher_notes', $report->teacher_notes) }}</textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="status" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-2">Status Rapor</label>
+                                <select name="status" id="status" class="block w-full rounded-xl border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                                    <option value="draft" {{ old('status', $report->status) === 'draft' ? 'selected' : '' }}>Draft (Hanya Guru)</option>
+                                    <option value="published" {{ old('status', $report->status) === 'published' ? 'selected' : '' }}>Published (Dapat Dilihat Wali/Siswa)</option>
+                                    <option value="locked" {{ old('status', $report->status) === 'locked' ? 'selected' : '' }}>Locked (Terkunci & Siap Cetak)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end justify-end">
+                                <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition">
+                                    Simpan Ulasan & Status
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                @else
+                    <div class="space-y-4 text-sm">
+                        <div class="bg-zinc-50 dark:bg-zinc-800/40 p-4 border dark:border-zinc-800 rounded-xl leading-relaxed">
+                            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Catatan Wali Kelas:</span>
+                            <p class="text-gray-800 dark:text-zinc-200 italic">
+                                "{{ $report->teacher_notes ?: 'Belum ada catatan dari wali kelas.' }}"
+                            </p>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t dark:border-zinc-800 pt-3">
+                            <span>Status Rapor: <strong class="uppercase text-indigo-600 dark:text-indigo-400">{{ $report->status }}</strong></span>
+                            @if($report->status === 'locked')
+                                <span class="text-rose-500 font-bold">🔒 Catatan Terkunci</span>
+                            @else
+                                <span class="text-gray-400">Hanya guru kelas yang dapat memperbarui catatan ini.</span>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+        </div>
+    </div>
+</x-app-layout>
