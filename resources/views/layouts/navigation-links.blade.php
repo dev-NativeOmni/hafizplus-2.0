@@ -70,7 +70,7 @@
 @endif
 
 <!-- AKADEMIK & TAHFIZH Group -->
-@if ($canManageRecords || ($canViewProgress && $hasRoute('progress.index')) || ($canViewReports && $hasRoute('reports.index')))
+@if ($canManageRecords || ($canViewProgress && $hasRoute('progress.index')) || ($canViewReports && $hasRoute('reports.index')) || $hasRoute('quran.mushaf') || ($canViewDigitalReports && $hasRoute('digital-reports.index')) || ($canViewTeacherPerformance && $hasRoute('reports.teachers')))
     <div class="mt-6 space-y-1">
         <span class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">
             Tahfizh
@@ -139,7 +139,7 @@
             </a>
         @endif
 
-        @if ($hasRoute('digital-reports.index'))
+        @if ($canViewDigitalReports && $hasRoute('digital-reports.index'))
             <a href="{{ route('digital-reports.index') }}" class="{{ $getLinkClasses($routeIs('digital-reports.*')) }}">
                 <svg class="{{ $getIconClasses($routeIs('digital-reports.*')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -148,7 +148,7 @@
             </a>
         @endif
 
-        @if (($isSuperAdmin || $isAdminUser || $isHeadmaster) && $hasRoute('reports.teachers'))
+        @if ($canViewTeacherPerformance && $hasRoute('reports.teachers'))
             <a href="{{ route('reports.teachers') }}" class="{{ $getLinkClasses($routeIs('reports.teachers')) }}">
                 <svg class="{{ $getIconClasses($routeIs('reports.teachers')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -160,7 +160,7 @@
 @endif
 
 <!-- KEAGAMAAN Group -->
-@if ($hasRoute('adab.index'))
+@if ($canViewAdab && $hasRoute('adab.index'))
     <div class="mt-6 space-y-1">
         <span class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">
             Keagamaan
@@ -176,7 +176,7 @@
 @endif
 
 <!-- KETAHANAN SEKOLAH Group -->
-@if ($hasRoute('student-points.index'))
+@if ($canViewStudentPoints && $hasRoute('student-points.index'))
     <div class="mt-6 space-y-1">
         <span class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">
             Ketahanan Sekolah

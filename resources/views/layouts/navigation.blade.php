@@ -21,15 +21,20 @@
     $isSupervisor = $hasRole('supervisor');
     $isHeadmaster = $hasRole('headmaster');
     $isTanse = $hasRole('tanse');
+    $isCoordinatorTahfizh = $hasRole('coordinator_tahfizh');
 
     $logo = \Illuminate\Support\Facades\Schema::hasTable('settings') ? \App\Models\Setting::get('logo') : null;
     $namaInstansi = \Illuminate\Support\Facades\Schema::hasTable('settings') ? \App\Models\Setting::get('nama_instansi') : null;
 
     $isAdmin = $isSuperAdmin || $isAdminUser;
-    $canManageRecords = $isSuperAdmin || $isAdminUser || $isTeacher || $isSupervisor;
-    $canViewProgress = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isSupervisor || $isHeadmaster;
-    $canViewReports = $isSuperAdmin || $isAdminUser || $isTeacher || $isHeadmaster;
+    $canManageRecords = $isSuperAdmin || $isAdminUser || $isTeacher || $isSupervisor || $isHeadmaster || $isCoordinatorTahfizh;
+    $canViewProgress = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isSupervisor || $isHeadmaster || $isCoordinatorTahfizh;
+    $canViewReports = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isHeadmaster || $isSupervisor || $isCoordinatorTahfizh;
     $canViewAudit = $isSuperAdmin || $isAdminUser;
+    $canViewDigitalReports = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isHeadmaster || $isSupervisor || $isCoordinatorTahfizh || $isTanse;
+    $canViewTeacherPerformance = $isSuperAdmin || $isAdminUser || $isHeadmaster;
+    $canViewAdab = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isSupervisor;
+    $canViewStudentPoints = $isSuperAdmin || $isAdminUser || $isTeacher || $isParent || $isStudent || $isSupervisor || $isHeadmaster || $isTanse;
 
     $hasRoute = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
 

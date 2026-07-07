@@ -291,10 +291,11 @@ Route::middleware(['auth'])->group(function () {
     | Rapor Digital Terpadu
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh'])->group(function () {
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh,tanse'])->group(function () {
         Route::get('/digital-reports', [StudentReportController::class, 'index'])->name('digital-reports.index');
         Route::get('/digital-reports/student/{student}', [StudentReportController::class, 'show'])->name('digital-reports.show');
         Route::get('/digital-reports/student/{student}/print', [StudentReportController::class, 'print'])->name('digital-reports.print');
+        Route::get('/digital-reports/class/{classRoom}/print', [StudentReportController::class, 'printClass'])->name('digital-reports.class-print');
     });
 
     Route::middleware(['role:super_admin,admin,teacher'])->group(function () {

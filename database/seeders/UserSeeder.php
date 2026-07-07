@@ -37,6 +37,21 @@ class UserSeeder extends Seeder
                 'name' => 'Santri HafizPlus',
                 'username' => 'santri',
             ],
+            [
+                'role' => 'headmaster',
+                'name' => 'Kepala Sekolah HafizPlus',
+                'username' => 'kepsek',
+            ],
+            [
+                'role' => 'tanse',
+                'name' => 'Tanse HafizPlus',
+                'username' => 'tanse',
+            ],
+            [
+                'role' => 'coordinator_tahfizh',
+                'name' => 'Koordinator Tahfizh HafizPlus',
+                'username' => 'koordinator',
+            ],
         ];
 
         foreach ($users as $userData) {

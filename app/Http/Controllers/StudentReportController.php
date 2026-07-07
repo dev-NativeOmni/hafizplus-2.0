@@ -142,10 +142,42 @@ class StudentReportController extends Controller
             ->exists();
         abort_unless($canView, 403);
 
-        $student->load(['classRoom.program', 'teacher.user', 'parents.user']);
+        $academicYear = $request->input('academic_year', '2025/2026');
+        $semester = $request->integer('semester', 1);
+
+        $data = $this->getReportData($student, $academicYear, $semester);
+
+        return view('reports.digital-report-print', $data);
+    }
+
+    public function printClass(ClassRoom $classRoom, Request $request)
+    {
+        $user = $request->user();
+        
+        $visibleStudentIds = $this->progressService->visibleStudentQuery($user)
+            ->where('class_room_id', $classRoom->id)
+            ->pluck('id');
+
+        $students = Student::whereIn('id', $visibleStudentIds)->orderBy('name')->get();
+        
+        if ($students->isEmpty()) {
+            abort(404, 'Tidak ada santri di kelas ini yang dapat Anda akses.');
+        }
 
         $academicYear = $request->input('academic_year', '2025/2026');
         $semester = $request->integer('semester', 1);
+
+        $reportsData = [];
+        foreach ($students as $student) {
+            $reportsData[] = $this->getReportData($student, $academicYear, $semester);
+        }
+
+        return view('reports.digital-report-class-print', compact('classRoom', 'reportsData', 'academicYear', 'semester'));
+    }
+
+    private function getReportData(Student $student, string $academicYear, int $semester): array
+    {
+        $student->load(['classRoom.program', 'teacher.user', 'parents.user']);
 
         // Tahfizh
         $progress = $this->progressService->calculate($student);
@@ -173,7 +205,7 @@ class StudentReportController extends Controller
             'semester' => $semester,
         ])->first();
 
-        return view('reports.digital-report-print', compact(
+        return compact(
             'student',
             'academicYear',
             'semester',
@@ -188,6 +220,6 @@ class StudentReportController extends Controller
             'violations',
             'rewards',
             'report'
-        ));
+        );
     }
 }

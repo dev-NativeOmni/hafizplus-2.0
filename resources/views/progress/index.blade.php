@@ -138,6 +138,44 @@
                 </div>
             </div>
 
+            @if ($progressRows->isNotEmpty())
+                @php
+                    $chartData = $progressRows->map(fn($row) => [
+                        'name' => $row['student_name'],
+                        'target' => $row['total_targets'],
+                        'realized' => $row['completed_targets'],
+                    ])->values();
+                    $chartHeight = max(220, $progressRows->count() * 45);
+                @endphp
+                <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="mb-4 border-b border-gray-150 pb-3 flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">
+                                Diagram Progres Hafalan Santri
+                                @if (request('class_room_id'))
+                                    - {{ $classRooms->firstWhere('id', request('class_room_id'))?->name }}
+                                @endif
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Membandingkan jumlah target hafalan yang direncanakan dengan target yang telah terealisasi (selesai).
+                            </p>
+                        </div>
+                        <div class="flex gap-4 text-xs font-semibold">
+                            <span class="flex items-center gap-1.5 text-zinc-500">
+                                <span class="w-3.5 h-3.5 bg-indigo-500 rounded"></span> Target Setoran
+                            </span>
+                            <span class="flex items-center gap-1.5 text-zinc-500">
+                                <span class="w-3.5 h-3.5 bg-emerald-500 rounded"></span> Terealisasi (Lulus)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full overflow-x-auto" style="height: {{ $chartHeight }}px;">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+            @endif
+
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div class="border-b border-gray-200 px-5 py-4">
                     <h3 class="text-base font-semibold text-gray-900">
@@ -254,4 +292,102 @@
 
         </div>
     </div>
+
+    @if ($progressRows->isNotEmpty())
+        <!-- ChartJS Script -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                
+                const studentsData = @json($chartData);
+
+                const labels = studentsData.map(item => item.name);
+                const targets = studentsData.map(item => item.target);
+                const realized = studentsData.map(item => item.realized);
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Target Setoran',
+                                data: targets,
+                                backgroundColor: 'rgba(99, 102, 241, 0.85)', // Indigo-500
+                                borderColor: 'rgb(99, 102, 241)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                barThickness: 12,
+                            },
+                            {
+                                label: 'Terealisasi (Lulus)',
+                                data: realized,
+                                backgroundColor: 'rgba(16, 185, 129, 0.85)', // Emerald-500
+                                borderColor: 'rgb(16, 185, 129)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                barThickness: 12,
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` ${context.dataset.label}: ${context.raw} Target`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: 'rgba(243, 244, 246, 1)',
+                                    drawBorder: false,
+                                },
+                                ticks: {
+                                    precision: 0,
+                                    font: {
+                                        family: 'Inter, system-ui, sans-serif',
+                                        size: 11
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Jumlah Target Setoran',
+                                    font: {
+                                        family: 'Inter, system-ui, sans-serif',
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: {
+                                        family: 'Inter, system-ui, sans-serif',
+                                        size: 11,
+                                        weight: '500'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    @endif
 </x-app-layout>
