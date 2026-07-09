@@ -175,11 +175,11 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-right space-x-1">
-                                        <a href="{{ route('adab.show', $student) }}" class="inline-flex items-center px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-700 transition duration-150">
+                                        <a href="{{ route('adab.show', $student) }}" class="btn-action-detail">
                                             Rincian & Riwayat
                                         </a>
                                         @if ($student->adabRecords->isEmpty())
-                                            <a href="{{ route('adab.create', $student) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition duration-150">
+                                            <a href="{{ route('adab.create', $student) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm hover:scale-[1.02] transition duration-150">
                                                 Bantu Isi
                                             </a>
                                         @endif
