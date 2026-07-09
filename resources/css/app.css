@@ -357,24 +357,24 @@ button.bg-gray-900 * {
     font-size: 0.75rem;
     font-weight: 600;
     border-radius: 0.5rem;
-    background-color: #eff6ff !important; /* bg-blue-50 */
-    color: #1d4ed8 !important; /* text-blue-700 */
-    border: 1px solid #bfdbfe !important; /* border-blue-200 */
+    background-color: #f0fdfa !important; /* bg-teal-50 */
+    color: #0f766e !important; /* text-teal-700 */
+    border: 1px solid #ccfbf1 !important; /* border-teal-200 */
     transition: all 0.15s ease-in-out;
 }
 .btn-action-detail:hover {
-    background-color: #dbeafe !important; /* bg-blue-100 */
-    color: #1e40af !important; /* text-blue-800 */
+    background-color: #ccfbf1 !important; /* bg-teal-100 */
+    color: #115e59 !important; /* text-teal-800 */
     text-decoration: none !important;
 }
 .dark .btn-action-detail {
-    background-color: rgba(59, 130, 246, 0.1) !important;
-    color: #60a5fa !important;
-    border-color: rgba(59, 130, 246, 0.2) !important;
+    background-color: rgba(13, 148, 136, 0.1) !important;
+    color: #2dd4bf !important;
+    border-color: rgba(13, 148, 136, 0.2) !important;
 }
 .dark .btn-action-detail:hover {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    color: #93c5fd !important;
+    background-color: rgba(13, 148, 136, 0.2) !important;
+    color: #5eead4 !important;
 }
 
 .btn-action-edit {

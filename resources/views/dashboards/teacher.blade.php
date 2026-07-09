@@ -53,20 +53,42 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <a href="{{ url('/hafalan-records/create') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-4 shadow-sm">
-                    <p class="font-semibold">Input Hafalan</p>
-                    <p class="text-sm text-emerald-100">Catat setoran hafalan santri.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <a href="{{ url('/hafalan-records/create') }}" class="bg-white/80 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-white/5 shadow-sm rounded-2xl p-5 hover:shadow-md hover:border-zinc-300 dark:hover:border-white/10 hover:scale-[1.01] transition-all duration-200 flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 transition-colors duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-150">Input Setoran</h4>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Catat setoran hafalan baru santri.</p>
+                    </div>
                 </a>
 
-                <a href="{{ url('/murajaah-records/create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 py-4 shadow-sm">
-                    <p class="font-semibold">Input Murajaah</p>
-                    <p class="text-sm text-indigo-100">Catat evaluasi murajaah.</p>
+                <a href="{{ url('/murajaah-records/create') }}" class="bg-white/80 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-white/5 shadow-sm rounded-2xl p-5 hover:shadow-md hover:border-zinc-300 dark:hover:border-white/10 hover:scale-[1.01] transition-all duration-200 flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center flex-shrink-0 transition-colors duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.656 48.656 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7C4.547 9.547 4.5 10.768 4.5 12s.047 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.092-1.209.138-2.43.138-3.662Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 10.5h6M9 13.5h6" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors duration-150">Input Murajaah</h4>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Catat evaluasi pengulangan hafalan.</p>
+                    </div>
                 </a>
 
-                <a href="{{ url('/hafalan-targets/create') }}" class="bg-gray-900 hover:bg-black text-white rounded-xl px-5 py-4 shadow-sm">
-                    <p class="font-semibold">Buat Target</p>
-                    <p class="text-sm text-gray-300">Tetapkan target hafalan santri.</p>
+                <a href="{{ url('/hafalan-targets/create') }}" class="bg-white/80 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-white/5 shadow-sm rounded-2xl p-5 hover:shadow-md hover:border-zinc-300 dark:hover:border-white/10 hover:scale-[1.01] transition-all duration-200 flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 flex items-center justify-center flex-shrink-0 transition-colors duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-zinc-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors duration-150">Buat Target</h4>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Tetapkan sasaran/target hafalan santri.</p>
+                    </div>
                 </a>
             </div>
 
