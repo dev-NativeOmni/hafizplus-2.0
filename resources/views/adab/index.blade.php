@@ -135,16 +135,23 @@
                                             @if ($student->average_adab_score > 0)
                                                 @php
                                                     $score = $student->average_adab_score;
-                                                    $badgeColor = 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-100 dark:border-red-900/30';
-                                                    if ($score >= 85) {
-                                                        $badgeColor = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30';
-                                                    } elseif ($score >= 70) {
-                                                        $badgeColor = 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30';
-                                                    }
+                                                    $grade = $student->adab_grade;
+                                                    $badgeColor = match($grade) {
+                                                        'A' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30',
+                                                        'B' => 'bg-teal-50 text-teal-700 dark:bg-teal-950/20 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30',
+                                                        'C' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30',
+                                                        'D' => 'bg-orange-50 text-orange-700 dark:bg-orange-950/20 dark:text-orange-400 border border-orange-100 dark:border-orange-900/30',
+                                                        default => 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30',
+                                                    };
                                                 @endphp
-                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold {{ $badgeColor }}">
-                                                    {{ round($score, 1) }}
-                                                </span>
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-bold {{ $badgeColor }}">
+                                                        {{ round($score) }}
+                                                    </span>
+                                                    <span class="inline-flex items-center justify-center h-7 w-7 rounded-full text-sm font-black {{ $badgeColor }}">
+                                                        {{ $grade }}
+                                                    </span>
+                                                </div>
                                             @else
                                                 <span class="text-xs text-zinc-400 dark:text-zinc-650 italic">Belum ada data</span>
                                             @endif
@@ -191,45 +198,28 @@
                         📊 Persentase Kepatuhan Berdasarkan Kategori Adab
                     </h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- Allah -->
-                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border dark:border-zinc-800 flex flex-col justify-between items-center text-center">
-                            <span class="text-2xl mb-2">🕋</span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-550 dark:text-zinc-400">Adab Kepada Allah</span>
-                            <h3 class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">{{ $avgAllah }}%</h3>
-                            <div class="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden mt-4">
-                                <div class="bg-indigo-600 h-full rounded-full" style="width: {{ $avgAllah }}%"></div>
+                        @foreach ($categories as $catIdx => $cat)
+                            @php
+                                $pct   = $catStats[$catIdx] ?? 0;
+                                $grade = \App\Models\Setting::getAdabGrade($pct);
+                                $colors = [
+                                    'A' => ['bar' => 'bg-emerald-500', 'text' => 'text-emerald-600 dark:text-emerald-400'],
+                                    'B' => ['bar' => 'bg-teal-500',    'text' => 'text-teal-600 dark:text-teal-400'],
+                                    'C' => ['bar' => 'bg-amber-500',   'text' => 'text-amber-600 dark:text-amber-400'],
+                                    'D' => ['bar' => 'bg-orange-500',  'text' => 'text-orange-600 dark:text-orange-400'],
+                                    'E' => ['bar' => 'bg-rose-500',    'text' => 'text-rose-600 dark:text-rose-400'],
+                                ][$grade] ?? ['bar' => 'bg-zinc-500', 'text' => 'text-zinc-600 dark:text-zinc-400'];
+                            @endphp
+                            <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border dark:border-zinc-800 flex flex-col justify-between items-center text-center">
+                                <span class="text-2xl mb-2">{{ substr($cat['title'], 0, 2) }}</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-gray-550 dark:text-zinc-400 leading-tight">{{ Str::after($cat['title'], ' ') }}</span>
+                                <h3 class="text-3xl font-extrabold {{ $colors['text'] }} mt-2">{{ $grade }}</h3>
+                                <p class="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{{ $pct }}%</p>
+                                <div class="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden mt-4">
+                                    <div class="{{ $colors['bar'] }} h-full rounded-full" style="width: {{ $pct }}%"></div>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Rasul -->
-                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border dark:border-zinc-800 flex flex-col justify-between items-center text-center">
-                            <span class="text-2xl mb-2">💚</span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-550 dark:text-zinc-400">Adab Kepada Rasulullah</span>
-                            <h3 class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">{{ $avgRasul }}%</h3>
-                            <div class="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden mt-4">
-                                <div class="bg-emerald-600 h-full rounded-full" style="width: {{ $avgRasul }}%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Belajar -->
-                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border dark:border-zinc-800 flex flex-col justify-between items-center text-center">
-                            <span class="text-2xl mb-2">📚</span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-550 dark:text-zinc-400">Adab Belajar</span>
-                            <h3 class="text-3xl font-extrabold text-teal-600 dark:text-teal-400 mt-2">{{ $avgSosial }}%</h3>
-                            <div class="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden mt-4">
-                                <div class="bg-teal-600 h-full rounded-full" style="width: {{ $avgSosial }}%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Quran -->
-                        <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 border dark:border-zinc-800 flex flex-col justify-between items-center text-center">
-                            <span class="text-2xl mb-2">👥</span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-550 dark:text-zinc-400">Penilaian Pendamping</span>
-                            <h3 class="text-3xl font-extrabold text-purple-600 dark:text-purple-400 mt-2">{{ $avgQuran }}</h3>
-                            <div class="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden mt-4">
-                                <div class="bg-purple-600 h-full rounded-full" style="width: {{ $avgQuran }}%"></div>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
 

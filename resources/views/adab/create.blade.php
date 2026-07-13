@@ -7,8 +7,8 @@
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            
-            <!-- Profil Singkat Santri -->
+
+            {{-- Profil Singkat Santri --}}
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <span class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block mb-1">Pengisian Mandiri Santri</span>
@@ -17,30 +17,30 @@
                         Kelas: {{ $student->classRoom?->name ?: '-' }} | NIS: {{ $student->student_number ?: '-' }}
                     </p>
                 </div>
-                <a href="{{ route('adab.show', $student) }}" class="inline-flex items-center px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-sm font-semibold text-zinc-750 dark:text-zinc-300 bg-white dark:bg-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition duration-150">
+                <a href="{{ route('adab.show', $student) }}" class="inline-flex items-center px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition duration-150">
                     Kembali ke Riwayat
                 </a>
             </div>
 
-            <!-- Form Penilaian -->
+            {{-- Form Penilaian --}}
             <form method="POST" action="{{ route('adab.store', $student) }}" class="space-y-6" id="adabForm">
                 @csrf
 
-                <!-- Tanggal & Real-Time Tracker -->
+                {{-- Header: Tanggal & Live Score --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6 md:col-span-1 flex flex-col justify-between">
+                    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6 flex flex-col justify-between">
                         <div>
                             <span class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Tanggal Pengisian</span>
-                            <div class="text-base font-bold text-zinc-800 dark:text-zinc-200 bg-zinc-55 dark:bg-zinc-800/60 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                            <div class="text-base font-bold text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/60 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
                                 {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}
                             </div>
                         </div>
-                        <div class="mt-6 p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed border border-zinc-150 dark:border-zinc-800">
-                            <strong>Petunjuk:</strong> Jawablah seluruh pertanyaan kejujuran ini dengan <strong>Ya</strong> atau <strong>Tidak</strong>. Setiap jawaban <strong>Ya</strong> berkontribusi pada skor mandiri (bobot 50% dari nilai total). Nilai sisa 50% akan dinilai langsung oleh Pendamping Adab.
+                        <div class="mt-6 p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed border border-zinc-200 dark:border-zinc-800">
+                            <strong>Petunjuk:</strong> Jawab semua pertanyaan dengan jujur. Setiap jawaban <strong>Ya</strong> menambah skor. Nilai mandiri bobot 50% dari total akhir. Pendamping adab mengisi nilai 50% sisanya setiap bulan.
                         </div>
                     </div>
 
-                    <!-- Visual Score Widget -->
+                    {{-- Live Score Widget --}}
                     <div class="bg-gradient-to-br from-indigo-900 to-purple-900 text-white rounded-xl shadow-lg p-6 md:col-span-2 flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute -right-6 -bottom-6 opacity-10">
                             <svg class="h-40 w-40" fill="currentColor" viewBox="0 0 24 24">
@@ -48,73 +48,54 @@
                             </svg>
                         </div>
                         <div class="relative z-10">
-                            <h4 class="text-sm font-semibold uppercase text-indigo-200 tracking-wider">Perkiraan Skor Hari Ini</h4>
-                            <div class="flex items-baseline gap-2 mt-4">
+                            <h4 class="text-sm font-semibold uppercase text-indigo-200 tracking-wider">Perkiraan Nilai Mandiri Hari Ini</h4>
+                            <div class="flex items-baseline gap-3 mt-4">
                                 <span class="text-6xl font-black tracking-tight" id="liveScore">0</span>
-                                <span class="text-xl text-indigo-300">/ 50 Poin Mandiri</span>
+                                <div class="flex flex-col">
+                                    <span class="text-xl text-indigo-300">/ 100</span>
+                                    <span class="text-3xl font-black text-yellow-300 leading-none" id="liveGrade">-</span>
+                                </div>
                             </div>
                         </div>
                         <div class="mt-6 relative z-10">
-                            <!-- Progress Bar -->
                             <div class="w-full bg-indigo-950/50 rounded-full h-3 border border-indigo-800">
                                 <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-300" id="progressBar" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between items-center text-xs text-indigo-200 mt-2">
                                 <span id="scoreCategory">Kategori: -</span>
-                                <span id="filledCount">0 dari 15 pertanyaan terjawab</span>
+                                <span id="filledCount">0 dari 20 pertanyaan terjawab</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Soal Kuisioner per Kategori -->
-                @php
-                    $categories = \App\Models\Setting::getAdabQuestions();
-                @endphp
-
+                {{-- Soal Kuisioner per Kategori --}}
                 @foreach ($categories as $catIdx => $category)
-                    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6 space-y-6">
+                    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6 space-y-5">
                         <div>
                             <h3 class="text-lg font-bold text-zinc-900 dark:text-white">{{ $category['title'] }}</h3>
                             <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ $category['desc'] }}</p>
                         </div>
 
                         <div class="space-y-4">
-                            @foreach ($category['questions'] as $key => $questionText)
+                            @foreach ($category['questions'] as $qIdx => $questionText)
+                                @php $inputName = "cat_{$catIdx}_q{$qIdx}"; @endphp
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-zinc-100 dark:border-zinc-800 last:border-none gap-3">
                                     <div class="flex items-start gap-3 flex-1">
-                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                                            {{ substr($key, 1) }}
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0">
+                                            {{ ($catIdx * 5) + $qIdx + 1 }}
                                         </span>
                                         <p class="text-sm font-semibold text-zinc-800 dark:text-zinc-200 leading-relaxed">{{ $questionText }}</p>
                                     </div>
 
-                                    <!-- Opsi Ya / Tidak (Radio buttons) -->
                                     <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
-                                        <!-- Opsi Ya -->
-                                        <label class="flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-300 dark:hover:border-emerald-900/40" data-label-type="ya">
-                                            <input 
-                                                type="radio" 
-                                                name="{{ $key }}" 
-                                                value="1" 
-                                                class="sr-only adab-radio"
-                                                data-question="{{ $key }}"
-                                                required
-                                            >
-                                            Ya
+                                        <label class="flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-300 dark:hover:border-emerald-700" data-label-type="ya">
+                                            <input type="radio" name="{{ $inputName }}" value="1" class="sr-only adab-radio" data-input="{{ $inputName }}" required>
+                                            ✓ Ya
                                         </label>
-
-                                        <!-- Opsi Tidak -->
-                                        <label class="flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-900/40" data-label-type="tidak">
-                                            <input 
-                                                type="radio" 
-                                                name="{{ $key }}" 
-                                                value="0" 
-                                                class="sr-only adab-radio"
-                                                data-question="{{ $key }}"
-                                                required
-                                            >
-                                            Tidak
+                                        <label class="flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-700" data-label-type="tidak">
+                                            <input type="radio" name="{{ $inputName }}" value="0" class="sr-only adab-radio" data-input="{{ $inputName }}" required>
+                                            ✗ Tidak
                                         </label>
                                     </div>
                                 </div>
@@ -123,19 +104,18 @@
                     </div>
                 @endforeach
 
-                <!-- Catatan Evaluator / Tambahan (Opsional) -->
+                {{-- Catatan --}}
                 <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-6">
-                    <label for="notes" class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Catatan Harian / Refleksi Diri (Opsional)</label>
-                    <textarea 
-                        name="notes" 
-                        id="notes" 
-                        rows="3" 
+                    <label for="notes" class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Catatan / Refleksi Diri (Opsional)</label>
+                    <textarea
+                        name="notes"
+                        id="notes"
+                        rows="3"
                         placeholder="Tuliskan refleksi singkat Anda hari ini..."
                         class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600"
                     ></textarea>
                 </div>
 
-                <!-- Submit Area -->
                 <div class="flex justify-end gap-3">
                     <a href="{{ route('adab.show', $student) }}" class="inline-flex items-center px-5 py-3 border border-zinc-300 dark:border-zinc-700 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition duration-150">
                         Batal
@@ -148,74 +128,58 @@
         </div>
     </div>
 
-    <!-- Script Kalkulasi Real-time -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('adabForm');
-            const radios = document.querySelectorAll('.adab-radio');
-            const liveScoreEl = document.getElementById('liveScore');
-            const progressBar = document.getElementById('progressBar');
-            const scoreCategoryEl = document.getElementById('scoreCategory');
+            const radios        = document.querySelectorAll('.adab-radio');
+            const liveScoreEl   = document.getElementById('liveScore');
+            const liveGradeEl   = document.getElementById('liveGrade');
+            const progressBar   = document.getElementById('progressBar');
+            const catEl         = document.getElementById('scoreCategory');
             const filledCountEl = document.getElementById('filledCount');
+            const totalQ        = 20; // 4 categories × 5 questions
 
-            function updateCalculations() {
-                let filledQuestions = new Set();
-                let yesCount = 0;
+            function getGrade(score) {
+                if (score >= 90) return { grade: 'A', label: 'Mumtaz (Sangat Baik)' };
+                if (score >= 80) return { grade: 'B', label: 'Jayyid Jiddan (Baik Sekali)' };
+                if (score >= 70) return { grade: 'C', label: 'Jayyid (Baik)' };
+                if (score >= 60) return { grade: 'D', label: 'Maqbul (Cukup)' };
+                return { grade: 'E', label: "Dha'if (Kurang)" };
+            }
+
+            function updateCalc() {
+                const answered = new Set();
+                let yesCount   = 0;
 
                 radios.forEach(radio => {
-                    const label = radio.closest('label');
-                    const val = parseInt(radio.value);
-                    const q = radio.getAttribute('data-question');
+                    const label     = radio.closest('label');
                     const labelType = label.getAttribute('data-label-type');
 
                     if (radio.checked) {
-                        filledQuestions.add(q);
-                        if (val === 1) {
-                            yesCount++;
-                        }
+                        answered.add(radio.getAttribute('data-input'));
+                        if (radio.value === '1') yesCount++;
 
-                        // Apply checked styling based on answer
-                        if (labelType === 'ya') {
-                            label.className = 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none bg-emerald-500 border-emerald-500 text-white ring-4 ring-emerald-500/10 dark:ring-emerald-500/5';
-                        } else {
-                            label.className = 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none bg-zinc-500 border-zinc-500 text-white ring-4 ring-zinc-500/10 dark:ring-zinc-500/5';
-                        }
+                        label.className = labelType === 'ya'
+                            ? 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none bg-emerald-500 border-emerald-500 text-white ring-4 ring-emerald-500/20'
+                            : 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none bg-zinc-500 border-zinc-500 text-white ring-4 ring-zinc-500/20';
                     } else {
-                        // Reset label style back to normal
-                        label.className = 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-350 dark:hover:border-zinc-700';
+                        label.className = labelType === 'ya'
+                            ? 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-300 dark:hover:border-emerald-700'
+                            : 'flex items-center justify-center px-4 py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-700';
                     }
                 });
 
-                // Calculate score out of 50
-                let studentScore = Math.round((yesCount / 15) * 50 * 10) / 10;
+                const score    = answered.size > 0 ? Math.round((yesCount / totalQ) * 100) : 0;
+                const gradeObj = answered.size === totalQ ? getGrade(score) : { grade: '-', label: '-' };
 
-                // Update UI elements
-                liveScoreEl.textContent = studentScore;
-                progressBar.style.width = (studentScore * 2) + '%';
-                filledCountEl.textContent = `${filledQuestions.size} dari 15 pertanyaan terjawab`;
-
-                // Update Category string
-                let category = '-';
-                if (filledQuestions.size === 15) {
-                    if (studentScore >= 42.5) {
-                        category = 'Mumtaz (Sangat Baik)';
-                    } else if (studentScore >= 35) {
-                        category = 'Jayyid (Baik)';
-                    } else if (studentScore >= 27.5) {
-                        category = 'Maqbul (Cukup)';
-                    } else {
-                        category = 'Dhaif (Kurang)';
-                    }
-                }
-                scoreCategoryEl.textContent = `Kategori: ${category}`;
+                liveScoreEl.textContent = score;
+                liveGradeEl.textContent = gradeObj.grade;
+                progressBar.style.width = score + '%';
+                filledCountEl.textContent = `${answered.size} dari ${totalQ} pertanyaan terjawab`;
+                catEl.textContent = answered.size === totalQ ? `Nilai: ${gradeObj.label}` : 'Kategori: -';
             }
 
-            radios.forEach(radio => {
-                radio.addEventListener('change', updateCalculations);
-            });
-
-            // Run initial update
-            updateCalculations();
+            radios.forEach(r => r.addEventListener('change', updateCalc));
+            updateCalc();
         });
     </script>
 </x-app-layout>

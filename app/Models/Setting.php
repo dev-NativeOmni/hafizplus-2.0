@@ -24,51 +24,93 @@ class Setting extends Model
         return $setting;
     }
 
-    public static function getAdabQuestions()
+    /**
+     * Returns the 4 adab categories with their questions.
+     * Each category has a 'title', 'desc', and 'questions' (array of strings).
+     */
+    public static function getAdabQuestions(): array
     {
         $default = [
             [
-                'title' => '🕋 Adab Kepada Allah',
-                'desc' => 'Menjaga hubungan ketakwaan dan ibadah sehari-hari kepada Allah Subhanahu wa Ta\'ala.',
+                'title'     => '🕋 Adab Kepada Allah',
+                'desc'      => 'Menjaga hubungan ketakwaan dan ibadah sehari-hari kepada Allah Subhanahu wa Ta\'ala.',
                 'questions' => [
-                    'q1' => 'Apakah Anda melaksanakan shalat fardhu tepat waktu hari ini?',
-                    'q2' => 'Apakah Anda mengawali aktivitas hari ini dengan membaca Basmalah?',
-                    'q3' => 'Apakah Anda selalu berdoa setelah selesai shalat fardhu hari ini?',
-                    'q4' => 'Apakah Anda bersyukur atas segala nikmat yang Anda rasakan hari ini?',
-                    'q5' => 'Apakah Anda menyempatkan diri berdzikir (membaca tasbih/tahmid/takbir) hari ini?'
-                ]
+                    'Apakah Anda melaksanakan shalat fardhu tepat waktu hari ini?',
+                    'Apakah Anda mengawali aktivitas hari ini dengan membaca Basmalah?',
+                    'Apakah Anda selalu berdoa setelah selesai shalat fardhu hari ini?',
+                    'Apakah Anda bersyukur atas segala nikmat yang Anda rasakan hari ini?',
+                    'Apakah Anda menyempatkan diri berdzikir (membaca tasbih/tahmid/takbir) hari ini?',
+                ],
             ],
             [
-                'title' => '💚 Adab Kepada Rasulullah',
-                'desc' => 'Menghidupkan kecintaan dan amalan sunnah sesuai ajaran Nabi Muhammad Shallallahu \'Alaihi wa Sallam.',
+                'title'     => '👥 Adab Kepada Sesama Teman',
+                'desc'      => 'Menjalin hubungan yang baik, saling menghormati, dan berlaku adil terhadap sesama.',
                 'questions' => [
-                    'q6' => 'Apakah Anda membaca shalawat kepada Nabi Muhammad hari ini?',
-                    'q7' => 'Apakah Anda berusaha menjalankan sunnah Nabi (seperti makan/minum dengan duduk dan tangan kanan) hari ini?',
-                    'q8' => 'Apakah Anda menyempatkan diri membaca doa/dzikir pagi atau petang hari ini?',
-                    'q9' => 'Apakah Anda membaca doa harian (sebelum/sesudah tidur, makan, atau masuk kamar mandi) hari ini?',
-                    'q10' => 'Apakah Anda mendengarkan, membaca, atau merenungkan hadits Rasulullah hari ini?'
-                ]
+                    'Apakah Anda bersikap sopan dan santun kepada teman-teman hari ini?',
+                    'Apakah Anda menghindari perkataan kasar, mengejek, atau menyakiti teman?',
+                    'Apakah Anda membantu teman yang membutuhkan pertolongan hari ini?',
+                    'Apakah Anda menjaga amanah dan kejujuran dalam pergaulan hari ini?',
+                    'Apakah Anda ikut menjaga kerukunan dan ketenangan di lingkungan asrama/kelas?',
+                ],
             ],
             [
-                'title' => '📚 Adab Belajar',
-                'desc' => 'Menjaga ketertiban, kebersihan, kepatuhan, dan doa dalam menuntut ilmu.',
+                'title'     => '📚 Adab Ketika Belajar',
+                'desc'      => 'Menjaga ketertiban, kebersihan, kepatuhan, dan doa dalam menuntut ilmu.',
                 'questions' => [
-                    'q11' => 'Apakah Anda datang/masuk kelas tepat waktu dan menyiapkan peralatan belajar?',
-                    'q12' => 'Apakah Anda menyimak penjelasan guru dengan khusyuk dan tidak mengobrol saat pelajaran?',
-                    'q13' => 'Apakah Anda mencatat materi pelajaran dengan rapi dan tertib?',
-                    'q14' => 'Apakah Anda mengawali dan mengakhiri belajar dengan berdoa?',
-                    'q15' => 'Apakah Anda menjaga kebersihan dan kerapian tempat belajar Anda?'
-                ]
+                    'Apakah Anda datang/masuk kelas tepat waktu dan menyiapkan peralatan belajar?',
+                    'Apakah Anda menyimak penjelasan guru dengan khusyuk dan tidak mengobrol saat pelajaran?',
+                    'Apakah Anda mencatat materi pelajaran dengan rapi dan tertib?',
+                    'Apakah Anda mengawali dan mengakhiri belajar dengan berdoa?',
+                    'Apakah Anda menjaga kebersihan dan kerapian tempat belajar Anda?',
+                ],
+            ],
+            [
+                'title'     => '🌿 Adab terhadap Lingkungan',
+                'desc'      => 'Menjaga kebersihan, ketertiban, dan kelestarian lingkungan sebagai bentuk syukur kepada Allah.',
+                'questions' => [
+                    'Apakah Anda membuang sampah pada tempatnya hari ini?',
+                    'Apakah Anda menjaga kebersihan kamar/asrama Anda hari ini?',
+                    'Apakah Anda turut merawat fasilitas sekolah/pesantren dengan baik?',
+                    'Apakah Anda bersikap hemat dalam menggunakan air, listrik, atau barang fasilitas?',
+                    'Apakah Anda tidak merusak atau mencoret-coret benda/properti milik bersama?',
+                ],
             ],
         ];
 
         $json = self::get('adab_questions');
         if ($json) {
             $decoded = json_decode($json, true);
-            if (is_array($decoded) && count($decoded) === 3) {
+            if (is_array($decoded) && count($decoded) >= 2) {
                 return $decoded;
             }
         }
+
         return $default;
+    }
+
+    /**
+     * Convert a 0-100 percentage score to a letter grade.
+     */
+    public static function getAdabGrade(float $score): string
+    {
+        if ($score >= 90) return 'A';
+        if ($score >= 80) return 'B';
+        if ($score >= 70) return 'C';
+        if ($score >= 60) return 'D';
+        return 'E';
+    }
+
+    /**
+     * Get grade label in Bahasa Indonesia.
+     */
+    public static function getAdabGradeLabel(string $grade): string
+    {
+        return match ($grade) {
+            'A' => 'Mumtaz (Sangat Baik)',
+            'B' => 'Jayyid Jiddan (Baik Sekali)',
+            'C' => 'Jayyid (Baik)',
+            'D' => 'Maqbul (Cukup)',
+            default => 'Dha\'if (Kurang)',
+        };
     }
 }

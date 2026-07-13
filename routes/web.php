@@ -295,7 +295,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/adab/student/{student}', [AdabController::class, 'show'])->name('adab.show');
         Route::get('/adab/student/{student}/create', [AdabController::class, 'create'])->name('adab.create');
         Route::post('/adab/student/{student}', [AdabController::class, 'store'])->name('adab.store');
-        Route::post('/adab/student/{student}/record/{adabRecord}/mentor-score', [AdabController::class, 'storeMentorScore'])->name('adab.store-mentor-score');
+        Route::post('/adab/student/{student}/mentor-score', [AdabController::class, 'storeMentorScore'])->name('adab.store-mentor-score');
         
         Route::middleware(['role:super_admin,admin,supervisor'])->group(function () {
             Route::delete('/adab/{adabRecord}', [AdabController::class, 'destroy'])->name('adab.destroy');

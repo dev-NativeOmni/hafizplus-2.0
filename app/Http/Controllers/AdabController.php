@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdabMentorAssessment;
 use App\Models\AdabRecord;
 use App\Models\ClassRoom;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +16,9 @@ use Illuminate\View\View;
 
 class AdabController extends Controller
 {
+    /* -----------------------------------------------------------------------
+     | INDEX
+     * -------------------------------------------------------------------- */
     public function index(Request $request): View|RedirectResponse
     {
         $user = Auth::user();
@@ -24,14 +29,13 @@ class AdabController extends Controller
             return redirect()->route('adab.show', $student);
         }
 
-        $isAdmin = $user->hasAnyRole(['super_admin', 'admin']);
+        $isAdmin      = $user->hasAnyRole(['super_admin', 'admin']);
         $isSupervisor = $user->hasRole('supervisor');
-        $isTeacher = $user->hasRole('teacher');
-        $isParent = $user->hasRole('parent');
+        $isTeacher    = $user->hasRole('teacher');
+        $isParent     = $user->hasRole('parent');
 
         $classRooms = ClassRoom::query()->orderBy('name')->get();
 
-        // Determine which students this user can view
         $studentQuery = Student::query()->with(['classRoom']);
 
         if ($isTeacher) {
@@ -44,12 +48,9 @@ class AdabController extends Controller
             });
         }
 
-        // Apply classroom filter
         if ($request->filled('class_room_id')) {
             $studentQuery->where('class_room_id', $request->integer('class_room_id'));
         }
-
-        // Apply search filter
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
             $studentQuery->where('name', 'like', "%{$search}%");
@@ -58,123 +59,176 @@ class AdabController extends Controller
         $students = $studentQuery->orderBy('name')->paginate(10)->withQueryString();
 
         $today = now()->toDateString();
+        $thisYear  = (int) now()->format('Y');
+        $thisMonth = (int) now()->format('n');
 
-        // Load today's record and calculate average Adab score for each student
         foreach ($students as $student) {
             $student->today_record = AdabRecord::where('student_id', $student->id)
                 ->where('assessment_date', $today)
                 ->first();
-            $student->average_adab_score = AdabRecord::where('student_id', $student->id)->avg('total_score') ?? 0;
+
+            // Average student_score from JSON-based records
+            $avg = AdabRecord::where('student_id', $student->id)
+                ->whereNotNull('student_score')
+                ->avg('student_score') ?? 0;
+
+            // Get latest mentor assessment for this month (or most recent)
+            $mentorAssessment = AdabMentorAssessment::where('student_id', $student->id)
+                ->orderByDesc('year')->orderByDesc('month')
+                ->first();
+
+            // Combined score: if mentor exists, weight 50/50; else just student score
+            if ($mentorAssessment) {
+                $combined = ($avg * 0.5) + ($mentorAssessment->mentor_score * 0.5);
+            } else {
+                $combined = $avg;
+            }
+
+            $student->average_adab_score = round($combined, 1);
+            $student->adab_grade         = Setting::getAdabGrade($combined);
         }
 
-        // Get all visible student IDs for dashboard statistics
+        // Stats for dashboard tab
         $allVisibleStudentIds = (clone $studentQuery)->pluck('id');
-        $adabStats = AdabRecord::whereIn('student_id', $allVisibleStudentIds)->get();
+        $adabStats = AdabRecord::whereIn('student_id', $allVisibleStudentIds)
+            ->whereNotNull('answers')
+            ->get();
 
-        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0;
+        $catStats = [0 => 0, 1 => 0, 2 => 0, 3 => 0];
+
         if ($adabStats->isNotEmpty()) {
-            $avgAllah = round(($adabStats->avg(fn($r) => ($r->q1 + $r->q2 + $r->q3 + $r->q4 + $r->q5) / 5)) * 100, 1);
-            $avgRasul = round(($adabStats->avg(fn($r) => ($r->q6 + $r->q7 + $r->q8 + $r->q9 + $r->q10) / 5)) * 100, 1);
-            $avgSosial = round(($adabStats->avg(fn($r) => ($r->q11 + $r->q12 + $r->q13 + $r->q14 + $r->q15) / 5)) * 100, 1);
-            $avgQuran = round(($adabStats->whereNotNull('mentor_score')->avg('mentor_score') ?? 0), 1);
+            foreach ($catStats as $catIdx => $_) {
+                $total = 0;
+                $count = 0;
+                foreach ($adabStats as $rec) {
+                    $answers = $rec->answers;
+                    if (isset($answers["cat_{$catIdx}"])) {
+                        $catAnswers = $answers["cat_{$catIdx}"];
+                        $count += count($catAnswers);
+                        $total += array_sum(array_map(fn ($v) => $v ? 1 : 0, $catAnswers));
+                    }
+                }
+                $catStats[$catIdx] = $count > 0 ? round(($total / $count) * 100, 1) : 0;
+            }
         }
+
+        $categories = Setting::getAdabQuestions();
 
         $classRankings = ClassRoom::query()
             ->join('students', 'class_rooms.id', '=', 'students.class_room_id')
             ->join('adab_records', 'students.id', '=', 'adab_records.student_id')
-            ->selectRaw('class_rooms.name, avg(adab_records.total_score) as avg_score')
+            ->whereNotNull('adab_records.student_score')
+            ->selectRaw('class_rooms.name, avg(adab_records.student_score) as avg_score')
             ->groupBy('class_rooms.id', 'class_rooms.name')
             ->orderByDesc('avg_score')
             ->limit(5)
             ->get();
 
-        return view('adab.index', compact('students', 'classRooms', 'isAdmin', 'isSupervisor', 'today', 'avgAllah', 'avgRasul', 'avgSosial', 'avgQuran', 'classRankings'));
+        return view('adab.index', compact(
+            'students', 'classRooms', 'isAdmin', 'isSupervisor',
+            'today', 'catStats', 'categories', 'classRankings'
+        ));
     }
 
+    /* -----------------------------------------------------------------------
+     | CREATE — show questionnaire form
+     * -------------------------------------------------------------------- */
     public function create(Student $student): View|RedirectResponse
     {
         $user = Auth::user();
-        
-        // Authorize: Student themselves, Admin/Supervisor, or student's teacher
-        $isOwn = $user->hasRole('student') && $student->user_id === $user->id;
+
+        $isOwn     = $user->hasRole('student') && $student->user_id === $user->id;
         $isManager = $user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab']);
         $isTeacher = $user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id;
-        
-        abort_unless($isOwn || $isManager || $isTeacher, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
 
-        // Check if already filled today
+        abort_unless($isOwn || $isManager || $isTeacher, 403);
+
         $today = now()->toDateString();
         $alreadyFilled = AdabRecord::where('student_id', $student->id)
             ->where('assessment_date', $today)
             ->exists();
-            
+
         if ($alreadyFilled) {
-            return redirect()
-                ->route('adab.show', $student)
+            return redirect()->route('adab.show', $student)
                 ->with('error', 'Kuisioner adab hari ini sudah diisi.');
         }
 
-        return view('adab.create', compact('student'));
+        $categories = Setting::getAdabQuestions();
+
+        return view('adab.create', compact('student', 'categories'));
     }
 
+    /* -----------------------------------------------------------------------
+     | STORE — save daily questionnaire
+     * -------------------------------------------------------------------- */
     public function store(Request $request, Student $student): RedirectResponse
     {
         $user = Auth::user();
-        
-        // Authorize: Student themselves, Admin/Supervisor, or student's teacher
-        $isOwn = $user->hasRole('student') && $student->user_id === $user->id;
+
+        $isOwn     = $user->hasRole('student') && $student->user_id === $user->id;
         $isManager = $user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab']);
         $isTeacher = $user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id;
-        
-        abort_unless($isOwn || $isManager || $isTeacher, 403, 'Anda tidak memiliki akses untuk mengisi kuisioner adab santri ini.');
 
-        $rules = [];
-        for ($i = 1; $i <= 15; $i++) {
-            $rules["q{$i}"] = 'required|boolean';
-        }
-        $rules['notes'] = 'nullable|string|max:1000';
-
-        $validated = $request->validate($rules);
+        abort_unless($isOwn || $isManager || $isTeacher, 403);
 
         $today = now()->toDateString();
-        
-        // Prevent double filling
-        $exists = AdabRecord::where('student_id', $student->id)
-            ->where('assessment_date', $today)
-            ->exists();
-            
-        if ($exists) {
-            return redirect()
-                ->route('adab.show', $student)
-                ->with('error', 'Anda sudah mengisi kuisioner adab hari ini.');
+
+        if (AdabRecord::where('student_id', $student->id)->where('assessment_date', $today)->exists()) {
+            return redirect()->route('adab.show', $student)
+                ->with('error', 'Kuisioner adab hari ini sudah diisi.');
         }
 
-        $sum = 0;
-        for ($i = 1; $i <= 15; $i++) {
-            $sum += (int) $validated["q{$i}"];
-        }
-        // Student score is out of 50
-        $studentScore = round(($sum / 15) * 50, 1);
-        $totalScore = $studentScore;
+        $categories = Setting::getAdabQuestions();
 
-        AdabRecord::create(array_merge($validated, [
-            'student_id' => $student->id,
-            'evaluator_id' => Auth::id(),
+        // Build validation rules dynamically
+        $rules = ['notes' => 'nullable|string|max:1000'];
+        foreach ($categories as $catIdx => $cat) {
+            foreach ($cat['questions'] as $qIdx => $_) {
+                $rules["cat_{$catIdx}_q{$qIdx}"] = 'required|boolean';
+            }
+        }
+        $validated = $request->validate($rules);
+
+        // Build answers JSON
+        $answers = [];
+        foreach ($categories as $catIdx => $cat) {
+            $catAnswers = [];
+            foreach ($cat['questions'] as $qIdx => $_) {
+                $catAnswers[] = (bool) $validated["cat_{$catIdx}_q{$qIdx}"];
+            }
+            $answers["cat_{$catIdx}"] = $catAnswers;
+        }
+
+        // Calculate student score (0–100)
+        $allAnswers   = array_merge(...array_values($answers));
+        $studentScore = count($allAnswers) > 0
+            ? round((array_sum($allAnswers) / count($allAnswers)) * 100, 2)
+            : 0;
+
+        AdabRecord::create([
+            'student_id'    => $student->id,
+            'evaluator_id'  => Auth::id(),
             'assessment_date' => $today,
-            'total_score' => $totalScore,
-        ]));
+            'answers'       => $answers,
+            'student_score' => $studentScore,
+            'total_score'   => $studentScore, // total = student only until mentor adds score
+            'notes'         => $validated['notes'] ?? null,
+        ]);
 
-        return redirect()
-            ->route('adab.show', $student)
-            ->with('success', 'Kuisioner Adab hari ini berhasil disimpan dengan nilai mandiri ' . $studentScore . '/50.');
+        $grade = Setting::getAdabGrade($studentScore);
+
+        return redirect()->route('adab.show', $student)
+            ->with('success', "Kuisioner Adab hari ini berhasil disimpan. Nilai Mandiri: {$studentScore}/100 (Nilai: {$grade}).");
     }
 
+    /* -----------------------------------------------------------------------
+     | SHOW — student adab detail + history
+     * -------------------------------------------------------------------- */
     public function show(Student $student): View
     {
-        $user = Auth::user();
+        $user    = Auth::user();
         $visible = false;
 
-        // Check if student is visible to user
         if ($user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab'])) {
             $visible = true;
         } elseif ($user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id) {
@@ -185,36 +239,77 @@ class AdabController extends Controller
             $visible = true;
         }
 
-        abort_unless($visible, 403, 'Anda tidak memiliki akses ke data adab santri ini.');
+        abort_unless($visible, 403);
 
         $student->load(['classRoom', 'teacher.user']);
+
         $adabRecords = AdabRecord::where('student_id', $student->id)
-            ->with(['evaluator', 'mentor'])
+            ->with(['evaluator'])
             ->orderBy('assessment_date', 'desc')
             ->paginate(10);
 
-        // Calculate average per question (0 to 1 scaling, multiply by 100 for percentage)
-        $allRecords = AdabRecord::where('student_id', $student->id)->get();
-        
-        $averages = [];
-        $totalAverage = 0;
-        $mentorAverage = 0;
-        
-        if ($allRecords->isNotEmpty()) {
-            for ($i = 1; $i <= 15; $i++) {
-                // Average of 1 and 0 is the fraction of "Yes" responses
-                $averages["q{$i}"] = round($allRecords->avg("q{$i}"), 2);
+        // Mentor assessments (periodic)
+        $mentorAssessments = AdabMentorAssessment::where('student_id', $student->id)
+            ->with('mentor')
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->get();
+
+        $latestMentor = $mentorAssessments->first();
+
+        // Calculate averages
+        $allRecords = AdabRecord::where('student_id', $student->id)
+            ->whereNotNull('student_score')
+            ->get();
+
+        $studentAvg = $allRecords->avg('student_score') ?? 0;
+
+        // Combined: if mentor score exists, weighted 50/50
+        $combinedScore = $latestMentor
+            ? round(($studentAvg * 0.5) + ($latestMentor->mentor_score * 0.5), 1)
+            : round($studentAvg, 1);
+
+        $grade      = Setting::getAdabGrade($combinedScore);
+        $gradeLabel = Setting::getAdabGradeLabel($grade);
+
+        // Per-category averages (for chart/display)
+        $categories = Setting::getAdabQuestions();
+        $catAverages = [];
+        foreach ($categories as $catIdx => $cat) {
+            $total = 0;
+            $count = 0;
+            foreach ($allRecords as $rec) {
+                $catAnswers = $rec->answers["cat_{$catIdx}"] ?? [];
+                foreach ($catAnswers as $answer) {
+                    $total += $answer ? 1 : 0;
+                    $count++;
+                }
             }
-            for ($i = 16; $i <= 20; $i++) {
-                $averages["q{$i}"] = 0;
-            }
-            $totalAverage = round($allRecords->avg('total_score'), 1);
-            $mentorAverage = round(($allRecords->whereNotNull('mentor_score')->avg('mentor_score') ?? 0), 1);
+            $catAverages[$catIdx] = $count > 0 ? round(($total / $count) * 100, 1) : 0;
         }
 
-        return view('adab.show', compact('student', 'adabRecords', 'averages', 'totalAverage', 'mentorAverage'));
+        // Check if mentor already scored this month
+        $thisYear  = (int) now()->format('Y');
+        $thisMonth = (int) now()->format('n');
+        $mentorAlreadyScoredThisMonth = AdabMentorAssessment::where('student_id', $student->id)
+            ->where('year', $thisYear)
+            ->where('month', $thisMonth)
+            ->exists();
+
+        $isMentor = $user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab']);
+
+        return view('adab.show', compact(
+            'student', 'adabRecords', 'mentorAssessments',
+            'studentAvg', 'combinedScore', 'grade', 'gradeLabel',
+            'categories', 'catAverages',
+            'latestMentor', 'isMentor',
+            'mentorAlreadyScoredThisMonth', 'thisYear', 'thisMonth'
+        ));
     }
 
+    /* -----------------------------------------------------------------------
+     | DESTROY — delete a daily record
+     * -------------------------------------------------------------------- */
     public function destroy(AdabRecord $adabRecord): RedirectResponse
     {
         $user = Auth::user();
@@ -225,36 +320,51 @@ class AdabController extends Controller
         $student = $adabRecord->student;
         $adabRecord->delete();
 
-        return redirect()
-            ->route('adab.show', $student)
+        return redirect()->route('adab.show', $student)
             ->with('success', 'Penilaian adab berhasil dihapus.');
     }
 
-    public function storeMentorScore(Request $request, Student $student, AdabRecord $adabRecord): RedirectResponse
+    /* -----------------------------------------------------------------------
+     | STORE MENTOR SCORE — periodic (monthly)
+     * -------------------------------------------------------------------- */
+    public function storeMentorScore(Request $request, Student $student): RedirectResponse
     {
         $user = Auth::user();
-        abort_unless($user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab']), 403, 'Hanya pendamping adab atau admin yang dapat memberi nilai.');
+        abort_unless(
+            $user->hasAnyRole(['super_admin', 'admin', 'supervisor', 'pendamping_adab']),
+            403, 'Hanya pendamping adab atau admin yang dapat memberi nilai.'
+        );
 
         $validated = $request->validate([
             'mentor_score' => 'required|integer|min:0|max:100',
+            'year'         => 'required|integer|min:2020|max:2099',
+            'month'        => 'required|integer|min:1|max:12',
+            'notes'        => 'nullable|string|max:1000',
         ]);
 
-        $sum = 0;
-        for ($i = 1; $i <= 15; $i++) {
-            $sum += (int) $adabRecord->{"q{$i}"};
-        }
-        $studentScore = round(($sum / 15) * 50, 1);
-        $mentorWeightedScore = $validated['mentor_score'] * 0.5;
-        $totalScore = round($studentScore + $mentorWeightedScore, 1);
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+            4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+            10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+        $periodLabel = ($months[$validated['month']] ?? '-') . ' ' . $validated['year'];
 
-        $adabRecord->update([
-            'mentor_score' => $validated['mentor_score'],
-            'mentor_id' => $user->id,
-            'total_score' => $totalScore,
-        ]);
+        AdabMentorAssessment::updateOrCreate(
+            [
+                'student_id' => $student->id,
+                'year'       => $validated['year'],
+                'month'      => $validated['month'],
+            ],
+            [
+                'mentor_id'    => $user->id,
+                'mentor_score' => $validated['mentor_score'],
+                'period_label' => $periodLabel,
+                'notes'        => $validated['notes'] ?? null,
+            ]
+        );
 
-        return redirect()
-            ->route('adab.show', $student)
-            ->with('success', 'Nilai pendamping adab berhasil disimpan: ' . $validated['mentor_score'] . '/100. Total skor menjadi: ' . $totalScore . '.');
+        return redirect()->route('adab.show', $student)
+            ->with('success', "Nilai pendamping untuk periode {$periodLabel} berhasil disimpan: {$validated['mentor_score']}/100.");
     }
 }

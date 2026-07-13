@@ -132,14 +132,23 @@
                         <span class="text-teal-500">🕋</span> Kepatuhan Adab Harian
                     </h4>
                     
-                    <div class="space-y-4">
+                        @php
+                            $totalGrade = \App\Models\Setting::getAdabGrade($avgTotal);
+                            $totalLabel = \App\Models\Setting::getAdabGradeLabel($totalGrade);
+                        @endphp
                         <div class="flex justify-between items-baseline">
                             <span class="text-xs text-gray-500">Skor Rerata Adab</span>
-                            <span class="text-xl font-extrabold text-teal-600 dark:text-teal-400">{{ $avgTotal }} / 100</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xl font-extrabold text-teal-600 dark:text-teal-400">{{ round($avgTotal) }} / 100</span>
+                                <span class="inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-black bg-teal-50 text-teal-700 dark:bg-teal-950/20 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30">
+                                    {{ $totalGrade }}
+                                </span>
+                            </div>
                         </div>
                         <div class="w-full bg-gray-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
                             <div class="h-full bg-teal-600 rounded-full" style="width: {{ $avgTotal }}%"></div>
                         </div>
+                        <div class="text-[10px] text-teal-600 dark:text-teal-400 italic font-semibold">{{ $totalLabel }}</div>
 
                         <div class="space-y-2 text-xs pt-1">
                             <div class="flex justify-between">
@@ -147,19 +156,22 @@
                                 <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgAllah }}%</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Adab kpd Rasulullah</span>
-                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgRasul }}%</span>
+                                <span class="text-gray-400">Adab kpd Sesama Teman</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgTeman }}%</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-400">Adab Belajar</span>
-                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgSosial }}%</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgBelajar }}%</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Penilaian Pendamping</span>
-                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgQuran }}</span>
+                                <span class="text-gray-400">Adab Lingkungan</span>
+                                <span class="font-bold text-gray-800 dark:text-zinc-300">{{ $avgLingkungan }}%</span>
+                            </div>
+                            <div class="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1.5 mt-1">
+                                <span class="text-gray-500 font-medium">Nilai Pendamping</span>
+                                <span class="font-bold text-purple-600 dark:text-purple-400">{{ $avgQuran > 0 ? round($avgQuran) : '-' }}</span>
                             </div>
                         </div>
-                    </div>
                 </div>
 
                 <!-- Module 3: Tanse Disiplin -->

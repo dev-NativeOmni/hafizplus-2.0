@@ -69,15 +69,17 @@ class AdabTest extends TestCase
             ->get(route('adab.create', $student))
             ->assertStatus(200);
 
-        // Submit form (12 "Ya" (1) and 3 "Tidak" (0) answers -> score should be 12 / 15 * 50 = 40)
+        // Submit form (15 "Ya" (1) and 5 "Tidak" (0) answers -> score should be 15 / 20 * 100 = 75)
         $data = [
             'notes' => 'Catatan harianku',
         ];
-        for ($i = 1; $i <= 12; $i++) {
-            $data["q{$i}"] = 1;
-        }
-        for ($i = 13; $i <= 15; $i++) {
-            $data["q{$i}"] = 0;
+        $yesCount = 15;
+        $currentYes = 0;
+        for ($c = 0; $c < 4; $c++) {
+            for ($q = 0; $q < 5; $q++) {
+                $data["cat_{$c}_q{$q}"] = ($currentYes < $yesCount) ? 1 : 0;
+                $currentYes++;
+            }
         }
 
         $response = $this->actingAs($studentUser)
@@ -85,10 +87,10 @@ class AdabTest extends TestCase
 
         $response->assertRedirect(route('adab.show', $student));
         
-        // Assert record exists in database with score 40
+        // Assert record exists in database with score 75
         $this->assertDatabaseHas('adab_records', [
             'student_id' => $student->id,
-            'total_score' => 40,
+            'student_score' => 75,
             'notes' => 'Catatan harianku',
         ]);
     }
@@ -106,17 +108,6 @@ class AdabTest extends TestCase
             'user_id' => $studentUser->id,
         ]);
 
-        // Create an existing daily record for student
-        $record = AdabRecord::create([
-            'student_id' => $student->id,
-            'evaluator_id' => $studentUser->id,
-            'assessment_date' => now()->toDateString(),
-            'q1' => 1, 'q2' => 1, 'q3' => 1, 'q4' => 1, 'q5' => 1,
-            'q6' => 1, 'q7' => 1, 'q8' => 1, 'q9' => 1, 'q10' => 1,
-            'q11' => 1, 'q12' => 1, 'q13' => 0, 'q14' => 0, 'q15' => 0,
-            'total_score' => 40,
-        ]);
-
         // Create mentor user
         $mentorRole = Role::where('name', 'pendamping_adab')->first();
         if (!$mentorRole) {
@@ -128,20 +119,23 @@ class AdabTest extends TestCase
             'status' => 'active',
         ]);
 
-        // Post mentor grade (80 out of 100 -> weighted score 40)
-        // Total score should become: 40 (student score) + 40 (mentor weighted) = 80
+        // Post periodic mentor grade for July 2026
         $response = $this->actingAs($mentor)
-            ->post(route('adab.store-mentor-score', [$student, $record]), [
+            ->post(route('adab.store-mentor-score', $student), [
                 'mentor_score' => 80,
+                'year' => 2026,
+                'month' => 7,
+                'notes' => 'Observasi baik',
             ]);
 
         $response->assertRedirect(route('adab.show', $student));
 
-        $this->assertDatabaseHas('adab_records', [
-            'id' => $record->id,
+        $this->assertDatabaseHas('adab_mentor_assessments', [
+            'student_id' => $student->id,
             'mentor_score' => 80,
             'mentor_id' => $mentor->id,
-            'total_score' => 80,
+            'year' => 2026,
+            'month' => 7,
         ]);
     }
 
@@ -254,8 +248,8 @@ class AdabTest extends TestCase
                 'desc' => $category['desc'] . ' MODIFIED',
                 'questions' => [],
             ];
-            foreach ($category['questions'] as $qKey => $questionText) {
-                $postData['categories'][$catIdx]['questions'][$qKey] = $questionText . ' MODIFIED';
+            foreach ($category['questions'] as $qIdx => $questionText) {
+                $postData['categories'][$catIdx]['questions'][$qIdx] = $questionText . ' MODIFIED';
             }
         }
 
@@ -266,6 +260,6 @@ class AdabTest extends TestCase
         // Assert updated in Setting
         $updatedQuestions = \App\Models\Setting::getAdabQuestions();
         $this->assertEquals('🕋 Adab Kepada Allah MODIFIED', $updatedQuestions[0]['title']);
-        $this->assertEquals('Apakah Anda melaksanakan shalat fardhu tepat waktu hari ini? MODIFIED', $updatedQuestions[0]['questions']['q1']);
+        $this->assertEquals('Apakah Anda melaksanakan shalat fardhu tepat waktu hari ini? MODIFIED', $updatedQuestions[0]['questions'][0]);
     }
 }

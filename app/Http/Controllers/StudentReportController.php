@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\AdabRecord;
+use App\Models\AdabMentorAssessment;
 use App\Models\StudentReport;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
@@ -66,13 +67,35 @@ class StudentReportController extends Controller
 
         // 2. ADAB AVERAGES (aspects)
         $adabRecords = AdabRecord::where('student_id', $student->id)->get();
-        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0; $avgTotal = 0;
+        $avgAllah = 0; $avgTeman = 0; $avgBelajar = 0; $avgLingkungan = 0; $avgQuran = 0; $avgTotal = 0;
         if ($adabRecords->isNotEmpty()) {
-            $avgAllah = round(($adabRecords->avg(fn($r) => ($r->q1+$r->q2+$r->q3+$r->q4+$r->q5)/5)) * 100, 1);
-            $avgRasul = round(($adabRecords->avg(fn($r) => ($r->q6+$r->q7+$r->q8+$r->q9+$r->q10)/5)) * 100, 1);
-            $avgSosial = round(($adabRecords->avg(fn($r) => ($r->q11+$r->q12+$r->q13+$r->q14+$r->q15)/5)) * 100, 1);
-            $avgQuran = round(($adabRecords->whereNotNull('mentor_score')->avg('mentor_score') ?? 0), 1);
-            $avgTotal = round($adabRecords->avg('total_score'), 1);
+            $sums = [0 => 0, 1 => 0, 2 => 0, 3 => 0];
+            $counts = [0 => 0, 1 => 0, 2 => 0, 3 => 0];
+            foreach ($adabRecords as $r) {
+                if (!empty($r->answers)) {
+                    foreach ($sums as $catIdx => $v) {
+                        $catAnswers = $r->answers["cat_{$catIdx}"] ?? [];
+                        foreach ($catAnswers as $ans) {
+                            $sums[$catIdx] += $ans ? 1 : 0;
+                            $counts[$catIdx]++;
+                        }
+                    }
+                }
+            }
+            $avgAllah = $counts[0] > 0 ? round(($sums[0] / $counts[0]) * 100, 1) : 0;
+            $avgTeman = $counts[1] > 0 ? round(($sums[1] / $counts[1]) * 100, 1) : 0;
+            $avgBelajar = $counts[2] > 0 ? round(($sums[2] / $counts[2]) * 100, 1) : 0;
+            $avgLingkungan = $counts[3] > 0 ? round(($sums[3] / $counts[3]) * 100, 1) : 0;
+            
+            $avgQuran = round(AdabMentorAssessment::where('student_id', $student->id)->avg('mentor_score') ?? 0, 1);
+            
+            $studentAvg = $adabRecords->avg('student_score') ?? 0;
+            $mentorAvg = AdabMentorAssessment::where('student_id', $student->id)->avg('mentor_score');
+            if ($mentorAvg !== null) {
+                $avgTotal = round(($studentAvg * 0.5) + ($mentorAvg * 0.5), 1);
+            } else {
+                $avgTotal = round($studentAvg, 1);
+            }
         }
 
         // 3. TANSE DISCIPLINE & AWARDS
@@ -98,8 +121,9 @@ class StudentReportController extends Controller
             'totalSetoran',
             'totalMurajaah',
             'avgAllah',
-            'avgRasul',
-            'avgSosial',
+            'avgTeman',
+            'avgBelajar',
+            'avgLingkungan',
             'avgQuran',
             'avgTotal',
             'violations',
@@ -214,13 +238,35 @@ class StudentReportController extends Controller
 
         // Adab
         $adabRecords = AdabRecord::where('student_id', $student->id)->get();
-        $avgAllah = 0; $avgRasul = 0; $avgSosial = 0; $avgQuran = 0; $avgTotal = 0;
+        $avgAllah = 0; $avgTeman = 0; $avgBelajar = 0; $avgLingkungan = 0; $avgQuran = 0; $avgTotal = 0;
         if ($adabRecords->isNotEmpty()) {
-            $avgAllah = round(($adabRecords->avg(fn($r) => ($r->q1+$r->q2+$r->q3+$r->q4+$r->q5)/5)) * 100, 1);
-            $avgRasul = round(($adabRecords->avg(fn($r) => ($r->q6+$r->q7+$r->q8+$r->q9+$r->q10)/5)) * 100, 1);
-            $avgSosial = round(($adabRecords->avg(fn($r) => ($r->q11+$r->q12+$r->q13+$r->q14+$r->q15)/5)) * 100, 1);
-            $avgQuran = round(($adabRecords->whereNotNull('mentor_score')->avg('mentor_score') ?? 0), 1);
-            $avgTotal = round($adabRecords->avg('total_score'), 1);
+            $sums = [0 => 0, 1 => 0, 2 => 0, 3 => 0];
+            $counts = [0 => 0, 1 => 0, 2 => 0, 3 => 0];
+            foreach ($adabRecords as $r) {
+                if (!empty($r->answers)) {
+                    foreach ($sums as $catIdx => $v) {
+                        $catAnswers = $r->answers["cat_{$catIdx}"] ?? [];
+                        foreach ($catAnswers as $ans) {
+                            $sums[$catIdx] += $ans ? 1 : 0;
+                            $counts[$catIdx]++;
+                        }
+                    }
+                }
+            }
+            $avgAllah = $counts[0] > 0 ? round(($sums[0] / $counts[0]) * 100, 1) : 0;
+            $avgTeman = $counts[1] > 0 ? round(($sums[1] / $counts[1]) * 100, 1) : 0;
+            $avgBelajar = $counts[2] > 0 ? round(($sums[2] / $counts[2]) * 100, 1) : 0;
+            $avgLingkungan = $counts[3] > 0 ? round(($sums[3] / $counts[3]) * 100, 1) : 0;
+
+            $avgQuran = round(AdabMentorAssessment::where('student_id', $student->id)->avg('mentor_score') ?? 0, 1);
+
+            $studentAvg = $adabRecords->avg('student_score') ?? 0;
+            $mentorAvg = AdabMentorAssessment::where('student_id', $student->id)->avg('mentor_score');
+            if ($mentorAvg !== null) {
+                $avgTotal = round(($studentAvg * 0.5) + ($mentorAvg * 0.5), 1);
+            } else {
+                $avgTotal = round($studentAvg, 1);
+            }
         }
 
         // Tanse
@@ -243,8 +289,9 @@ class StudentReportController extends Controller
             'targetRecords',
             'tahfizhExams',
             'avgAllah',
-            'avgRasul',
-            'avgSosial',
+            'avgTeman',
+            'avgBelajar',
+            'avgLingkungan',
             'avgQuran',
             'avgTotal',
             'violations',

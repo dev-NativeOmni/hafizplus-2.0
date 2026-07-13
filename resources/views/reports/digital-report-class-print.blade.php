@@ -79,9 +79,11 @@
             $hafalanRecords = $data['hafalanRecords'];
             $murajaahRecords = $data['murajaahRecords'];
             $targetRecords = $data['targetRecords'];
+            $tahfizhExams = $data['tahfizhExams'];
             $avgAllah = $data['avgAllah'];
-            $avgRasul = $data['avgRasul'];
-            $avgSosial = $data['avgSosial'];
+            $avgTeman = $data['avgTeman'];
+            $avgBelajar = $data['avgBelajar'];
+            $avgLingkungan = $data['avgLingkungan'];
             $avgQuran = $data['avgQuran'];
             $avgTotal = $data['avgTotal'];
             $violations = $data['violations'];
@@ -250,37 +252,42 @@
                     <tbody>
                         <tr class="border-b border-black">
                             <td class="p-2 border-r border-black text-center align-middle">1</td>
-                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA ALLAH</td>
-                            <td rowspan="3" class="p-2 border-r border-black text-center align-middle font-bold text-sm text-black">
-                                <span class="text-base font-black">{{ $avgTotal }}%</span>
+                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA ALLAH ({{ round($avgAllah) }}%)</td>
+                            <td rowspan="4" class="p-2 border-r border-black text-center align-middle font-bold text-sm text-black">
                                 @php
-                                    $pred = '';
-                                    if ($avgTotal >= 85) $pred = 'Mumtaz';
-                                    elseif ($avgTotal >= 70) $pred = 'Jayyid';
-                                    elseif ($avgTotal >= 55) $pred = 'Maqbul';
-                                    else $pred = 'Dhaif';
+                                    $pred = \App\Models\Setting::getAdabGrade($avgTotal);
+                                    $predLabel = \App\Models\Setting::getAdabGradeLabel($pred);
+                                    $desc = '';
+                                    if ($avgTotal >= 90) {
+                                        $desc = 'Sangat baik (Mumtaz), konsisten beribadah kepada Allah, berperilaku sopan terhadap sesama teman, menerapkan adab belajar secara tertib dan disiplin, serta menjaga kebersihan lingkungan dengan sangat baik.';
+                                    } elseif ($avgTotal >= 80) {
+                                        $desc = 'Baik sekali (Jayyid Jiddan), rutin melaksanakan ibadah harian, bersikap sopan kepada teman, tertib dalam mengikuti pelajaran, dan turut menjaga kebersihan lingkungan dengan baik.';
+                                    } elseif ($avgTotal >= 70) {
+                                        $desc = 'Baik (Jayyid), menunjukkan kesopanan kepada guru dan teman, mengikuti kegiatan belajar dengan tertib, dan menjaga kebersihan diri serta lingkungan.';
+                                    } elseif ($avgTotal >= 60) {
+                                        $desc = 'Cukup (Maqbul), sudah berusaha membiasakan adab harian dengan cukup baik, namun masih memerlukan pengawasan dan motivasi berkala agar lebih konsisten.';
+                                    } else {
+                                        $desc = 'Kurang (Dha\'if), memerlukan pembinaan moral intensif serta bimbingan khusus baik di sekolah maupun asrama untuk meningkatkan kedisiplinan dan adab sehari-hari.';
+                                    }
                                 @endphp
-                                <span class="text-[9px] font-bold text-gray-700 block mt-1 uppercase">{{ $pred }}</span>
+                                <span class="text-base font-black">{{ $pred }}</span>
+                                <span class="text-[9px] font-bold text-gray-700 block mt-1 uppercase">{{ round($avgTotal) }}/100</span>
                             </td>
-                            <td rowspan="3" class="p-3 text-gray-700 leading-relaxed align-middle">
-                                @if($avgTotal >= 85)
-                                    Sangat baik, konsisten dalam beribadah, shalat fardhu tepat waktu, rutin membaca shalawat serta menerapkan adab belajar secara tertib dan disiplin di kelas.
-                                @elseif($avgTotal >= 70)
-                                    Baik, rutin melaksanakan ibadah harian, membaca shalawat, serta menunjukkan kedisiplinan dan kesopanan yang baik saat belajar di kelas.
-                                @elseif($avgTotal >= 55)
-                                    Cukup baik, sudah berusaha tertib beribadah dan mengikuti aturan belajar di kelas, namun perlu pembinaan lebih lanjut agar lebih konsisten.
-                                @else
-                                    Memerlukan perhatian khusus dan bimbingan moral intensif baik di sekolah maupun di rumah untuk meningkatkan kualitas ibadah dan adab belajar.
-                                @endif
+                            <td rowspan="4" class="p-3 text-gray-700 leading-relaxed align-middle">
+                                {{ $desc }}
                             </td>
                         </tr>
                         <tr class="border-b border-black">
                             <td class="p-2 border-r border-black text-center align-middle">2</td>
-                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA ROSUL</td>
+                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA SESAMA TEMAN ({{ round($avgTeman) }}%)</td>
                         </tr>
                         <tr class="border-b border-black">
                             <td class="p-2 border-r border-black text-center align-middle">3</td>
-                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB BELAJAR</td>
+                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB KETIKA BELAJAR ({{ round($avgBelajar) }}%)</td>
+                        </tr>
+                        <tr class="border-b border-black">
+                            <td class="p-2 border-r border-black text-center align-middle">4</td>
+                            <td class="p-2 border-r border-black font-semibold align-middle">ADAB TERHADAP LINGKUNGAN ({{ round($avgLingkungan) }}%)</td>
                         </tr>
                     </tbody>
                 </table>

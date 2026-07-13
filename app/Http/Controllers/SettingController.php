@@ -70,22 +70,39 @@ class SettingController extends Controller
 
     public function updateAdab(Request $request)
     {
+        $input = $request->input('categories', []);
+
+        // Validate: must have at least 2 categories, max 6
+        if (count($input) < 2 || count($input) > 6) {
+            return back()->withErrors(['categories' => 'Jumlah kategori harus antara 2 dan 6.'])->withInput();
+        }
+
         $rules = [];
-        for ($catIdx = 0; $catIdx < 3; $catIdx++) {
+        foreach ($input as $catIdx => $cat) {
             $rules["categories.{$catIdx}.title"] = 'required|string|max:255';
-            $rules["categories.{$catIdx}.desc"] = 'required|string|max:1000';
-            
-            $startQ = ($catIdx * 5) + 1;
-            $endQ = $startQ + 4;
-            for ($qIdx = $startQ; $qIdx <= $endQ; $qIdx++) {
-                $rules["categories.{$catIdx}.questions.q{$qIdx}"] = 'required|string|max:255';
+            $rules["categories.{$catIdx}.desc"]  = 'required|string|max:1000';
+
+            $questions = $cat['questions'] ?? [];
+            foreach ($questions as $qIdx => $_) {
+                $rules["categories.{$catIdx}.questions.{$qIdx}"] = 'required|string|max:500';
             }
         }
 
         $validated = $request->validate($rules);
 
-        Setting::set('adab_questions', json_encode($validated['categories']));
+        // Normalize: ensure questions are plain arrays (not keyed by q-number)
+        $toSave = [];
+        foreach ($validated['categories'] as $catIdx => $cat) {
+            $toSave[] = [
+                'title'     => $cat['title'],
+                'desc'      => $cat['desc'],
+                'questions' => array_values($cat['questions']),
+            ];
+        }
 
-        return redirect()->route('settings.adab')->with('success', 'Daftar pertanyaan kuisioner adab berhasil diperbarui.');
+        Setting::set('adab_questions', json_encode($toSave));
+
+        return redirect()->route('settings.adab')
+            ->with('success', 'Daftar pertanyaan kuisioner adab berhasil diperbarui.');
     }
 }
