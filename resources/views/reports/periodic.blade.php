@@ -139,54 +139,111 @@
                     </div>
                 </div>
 
-                <!-- Detailed table per student -->
-                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-5 border-b border-gray-150 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/50">
-                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Rincian Perkembangan Santri</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Daftar akumulasi aktivitas setoran masing-masing santri selama periode terpilih.</p>
-                    </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-                            <thead class="bg-zinc-50 dark:bg-zinc-900/30 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                                <tr>
-                                    <th class="px-6 py-4">Nama Santri</th>
-                                    <th class="px-6 py-4 text-center">Jumlah Hafalan</th>
-                                    <th class="px-6 py-4 text-center">Jumlah Murajaah</th>
-                                    <th class="px-6 py-4 text-center">Nilai Rata-rata</th>
-                                    <th class="px-6 py-4">Perkembangan Terakhir</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800/60">
-                                @forelse ($studentReports as $row)
-                                    <tr class="hover:bg-zinc-550/[0.01] dark:hover:bg-white/[0.01]">
-                                        <td class="px-6 py-4">
-                                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $row['student']->name }}</div>
-                                            <div class="text-xs text-gray-400 mt-0.5">NIS: {{ $row['student']->student_number ?: '-' }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 text-center text-sm font-medium text-teal-600 dark:text-teal-400">
-                                            {{ $row['total_hafalan'] }} kali
-                                        </td>
-                                        <td class="px-6 py-4 text-center text-sm font-medium text-amber-600 dark:text-amber-450">
-                                            {{ $row['total_murajaah'] }} kali
-                                        </td>
-                                        <td class="px-6 py-4 text-center text-sm font-extrabold text-gray-900 dark:text-white">
-                                            {{ $row['avg_score'] ?? '-' }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-zinc-400 max-w-xs truncate">
-                                            {{ $row['latest_progress'] }}
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-zinc-500">
-                                            Tidak ada data perkembangan santri pada rentang waktu ini.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Detailed table per student grouped by Teacher & Halaqah -->
+                <div class="space-y-8">
+                    @forelse ($groupedReports as $teacherName => $halaqahs)
+                        <div class="space-y-6">
+                            <!-- Teacher Header Bar -->
+                            <div class="bg-teal-600 dark:bg-teal-700 text-white px-6 py-3.5 rounded-2xl shadow-sm flex justify-between items-center">
+                                <h3 class="text-sm font-extrabold tracking-wider uppercase">Pembimbing: {{ $teacherName }}</h3>
+                                <span class="text-xs bg-white/20 px-3 py-1 rounded-full font-bold">
+                                    {{ collect($halaqahs)->flatten(1)->count() }} Santri
+                                </span>
+                            </div>
+
+                            @foreach ($halaqahs as $halaqahLabel => $reports)
+                                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+                                    <!-- Halaqah Header -->
+                                    <div class="px-6 py-4 border-b border-gray-150 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-between items-center">
+                                        <div>
+                                            <h4 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Halaqah: {{ $halaqahLabel }}</h4>
+                                            <p class="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">Kelompok halaqah di bawah asuhan {{ $teacherName }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-xs">
+                                            <thead class="bg-zinc-50 dark:bg-zinc-900/30 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider text-center">
+                                                <!-- Row 1: Main Headers -->
+                                                <tr class="border-b border-zinc-200 dark:border-zinc-800">
+                                                    <th rowspan="2" class="px-4 py-3 text-left w-12 align-middle">No</th>
+                                                    <th rowspan="2" class="px-4 py-3 text-left align-middle min-w-[200px]">Nama Murid</th>
+                                                    <th rowspan="2" class="px-4 py-3 align-middle">Halaqah</th>
+                                                    <th colspan="2" class="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 text-center">Target</th>
+                                                    <th colspan="2" class="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 text-center">Capaian</th>
+                                                    <th rowspan="2" class="px-4 py-3 align-middle">Ketercapaian</th>
+                                                    <th colspan="3" class="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 text-center">Kehadiran</th>
+                                                    <th rowspan="2" class="px-4 py-3 align-middle w-24">Pelanggaran</th>
+                                                </tr>
+                                                <!-- Row 2: Sub-headers -->
+                                                <tr class="border-b border-zinc-200 dark:border-zinc-800">
+                                                    <th class="px-3 py-1.5 border-r border-zinc-200 dark:border-zinc-800 font-medium">Surat</th>
+                                                    <th class="px-3 py-1.5 font-medium">Ayat</th>
+                                                    <th class="px-3 py-1.5 border-r border-zinc-200 dark:border-zinc-800 font-medium">Surat</th>
+                                                    <th class="px-3 py-1.5 font-medium">Ayat</th>
+                                                    <th class="px-2 py-1.5 font-semibold text-rose-600">A</th>
+                                                    <th class="px-2 py-1.5 font-semibold text-amber-500">I</th>
+                                                    <th class="px-2 py-1.5 font-semibold text-blue-500">S</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-center text-gray-700 dark:text-zinc-300">
+                                                @foreach ($reports as $index => $row)
+                                                    <tr class="hover:bg-zinc-550/[0.01] dark:hover:bg-white/[0.01]">
+                                                        <td class="px-4 py-3 text-left font-medium text-gray-500 w-12">{{ $index + 1 }}</td>
+                                                        <td class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                                                            <div>{{ $row['student']->name }}</div>
+                                                            <div class="text-[10px] text-gray-400 font-normal mt-0.5">NIS: {{ $row['student']->student_number ?: '-' }}</div>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-gray-500 dark:text-zinc-450">{{ $row['halaqah_label'] }}</td>
+                                                        <td class="px-3 py-3 border-r border-zinc-150 dark:border-zinc-800 font-medium">{{ $row['target_surah'] }}</td>
+                                                        <td class="px-3 py-3 font-semibold">{{ $row['target_ayat'] }}</td>
+                                                        <td class="px-3 py-3 border-r border-zinc-150 dark:border-zinc-800 font-medium text-teal-600 dark:text-teal-400">{{ $row['capaian_surah'] }}</td>
+                                                        <td class="px-3 py-3 font-bold text-teal-600 dark:text-teal-400">{{ $row['capaian_ayat'] }}</td>
+                                                        <td class="px-4 py-3">
+                                                            @if ($row['is_tuntas'])
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/30 uppercase">Tuntas</span>
+                                                            @else
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-450 border border-rose-200 dark:border-rose-900/30 uppercase">Tidak Tuntas</span>
+                                                            @endif
+                                                        </td>
+                                                        <!-- Kehadiran (A/I/S) defaults to - as it is not tracked in DB -->
+                                                        <td class="px-2 py-3 text-gray-400">-</td>
+                                                        <td class="px-2 py-3 text-gray-400">-</td>
+                                                        <td class="px-2 py-3 text-gray-400">-</td>
+                                                        <!-- Pelanggaran -->
+                                                        <td class="px-4 py-3 font-bold {{ $row['violations_count'] > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400' }}">
+                                                            {{ $row['violations_count'] }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Table Footer with Completeness summary matching spreadsheet -->
+                                    <div class="px-6 py-3.5 bg-zinc-50 dark:bg-zinc-900/40 border-t border-gray-150 dark:border-zinc-800 text-[11px] font-bold text-gray-650 dark:text-zinc-400 flex justify-end gap-6">
+                                        @php
+                                            $totalGroup = count($reports);
+                                            $tuntasGroup = collect($reports)->where('is_tuntas', true)->count();
+                                            $tidakTuntasGroup = $totalGroup - $tuntasGroup;
+                                            $tuntasPct = $totalGroup > 0 ? round(($tuntasGroup / $totalGroup) * 100, 1) : 0;
+                                            $tidakTuntasPct = $totalGroup > 0 ? round(($tidakTuntasGroup / $totalGroup) * 100, 1) : 0;
+                                        @endphp
+                                        <span class="flex items-center gap-1">
+                                            Tuntas: <span class="text-teal-600 font-extrabold">{{ $tuntasPct }}%</span> ({{ $tuntasGroup }} murid)
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            Tidak Tuntas: <span class="text-rose-600 font-extrabold">{{ $tidakTuntasPct }}%</span> ({{ $tidakTuntasGroup }} murid)
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @empty
+                        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 text-center text-sm text-gray-500 dark:text-zinc-500 shadow-sm">
+                            Tidak ada data perkembangan santri pada rentang waktu ini.
+                        </div>
+                    @endforelse
                 </div>
             @else
                 <div class="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/30 rounded-2xl p-6 text-center text-yellow-800 dark:text-yellow-400">

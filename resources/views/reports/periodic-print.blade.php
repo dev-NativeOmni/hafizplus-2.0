@@ -133,43 +133,106 @@
             </div>
         </div>
 
-        <!-- Detailed List of Students -->
-        <div class="mb-10">
-            <h3 class="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Rincian Capaian Dan Ketuntasan Santri</h3>
-            <table class="min-w-full border-collapse border border-zinc-350 text-left text-xs">
-                <thead>
-                    <tr class="bg-zinc-100 border-b border-zinc-350">
-                        <th class="border border-zinc-350 px-4 py-2.5 font-bold text-zinc-800">Nama Santri</th>
-                        <th class="border border-zinc-350 px-4 py-2.5 text-center font-bold text-zinc-800 w-24">Target (Baris)</th>
-                        <th class="border border-zinc-350 px-4 py-2.5 text-center font-bold text-zinc-800 w-24">Capaian (Baris)</th>
-                        <th class="border border-zinc-350 px-4 py-2.5 text-center font-bold text-zinc-800 w-28">Status</th>
-                        <th class="border border-zinc-350 px-4 py-2.5 text-center font-bold text-zinc-800 w-24">Jumlah Setoran</th>
-                        <th class="border border-zinc-350 px-4 py-2.5 font-bold text-zinc-800">Setoran Terakhir</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-200">
-                    @forelse ($studentReports as $row)
-                        <tr>
-                            <td class="border border-zinc-350 px-4 py-2 font-semibold text-zinc-900">{{ $row['student']->name }}</td>
-                            <td class="border border-zinc-350 px-4 py-2 text-center text-zinc-700 font-medium">{{ $row['target_baris'] }} baris</td>
-                            <td class="border border-zinc-350 px-4 py-2 text-center text-zinc-700 font-semibold">{{ $row['capaian_baris'] }} baris</td>
-                            <td class="border border-zinc-350 px-4 py-2 text-center">
-                                @if ($row['is_tuntas'])
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">Tuntas</span>
-                                @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">Belum Tuntas</span>
-                                @endif
-                            </td>
-                            <td class="border border-zinc-350 px-4 py-2 text-center text-zinc-650">{{ $row['total_hafalan'] }} kali</td>
-                            <td class="border border-zinc-350 px-4 py-2 text-zinc-600 max-w-xs truncate">{{ $row['latest_progress'] }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="border border-zinc-350 px-4 py-6 text-center text-zinc-550">Tidak ada data perkembangan pada rentang waktu ini.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <!-- Detailed List of Students grouped by Teacher & Halaqah -->
+        <div class="mb-10 space-y-10">
+            <h3 class="text-xs font-bold text-zinc-900 mb-3 uppercase tracking-wider">Rincian Capaian Dan Ketuntasan Santri per Halaqah</h3>
+            
+            @forelse ($groupedReports as $teacherName => $halaqahs)
+                <div class="space-y-6" style="page-break-inside: avoid; break-inside: avoid;">
+                    <!-- Teacher Banner -->
+                    <div class="border-b-2 border-zinc-900 pb-1.5 mt-4">
+                        <h4 class="text-xs font-bold text-zinc-950 uppercase tracking-wide">
+                            PEMBIMBING (USTADZ/USTADZAH): {{ $teacherName }}
+                        </h4>
+                    </div>
+
+                    @foreach ($halaqahs as $halaqahLabel => $reports)
+                        <div class="mb-6" style="page-break-inside: avoid; break-inside: avoid;">
+                            <!-- Halaqah Header -->
+                            <div class="flex justify-between items-center bg-zinc-50 border border-zinc-350 px-4 py-1.5 mb-1.5">
+                                <span class="text-[10px] font-bold text-zinc-900 uppercase">Halaqah: {{ $halaqahLabel }}</span>
+                                <span class="text-[9px] text-zinc-500 font-semibold">{{ count($reports) }} Santri</span>
+                            </div>
+
+                            <table class="min-w-full border-collapse border border-zinc-350 text-left text-[11px]">
+                                <thead>
+                                    <!-- Row 1: Header groups -->
+                                    <tr class="bg-zinc-100 border-b border-zinc-350 text-center font-bold text-zinc-800">
+                                        <th rowspan="2" class="border border-zinc-350 px-3 py-2 text-left w-10 align-middle">No</th>
+                                        <th rowspan="2" class="border border-zinc-350 px-3 py-2 text-left align-middle min-w-[150px]">Nama Murid</th>
+                                        <th rowspan="2" class="border border-zinc-350 px-3 py-2 align-middle">Halaqah</th>
+                                        <th colspan="2" class="border border-zinc-350 px-2 py-1">Target</th>
+                                        <th colspan="2" class="border border-zinc-350 px-2 py-1">Capaian</th>
+                                        <th rowspan="2" class="border border-zinc-350 px-3 py-2 align-middle">Ketercapaian</th>
+                                        <th colspan="3" class="border border-zinc-350 px-2 py-1">Kehadiran</th>
+                                        <th rowspan="2" class="border border-zinc-350 px-3 py-2 align-middle w-20">Pelanggaran</th>
+                                    </tr>
+                                    <!-- Row 2: Header subcolumns -->
+                                    <tr class="bg-zinc-100 border-b border-zinc-350 text-center font-semibold text-[9px] text-zinc-700">
+                                        <th class="border border-zinc-350 px-2 py-1 font-semibold">Surah</th>
+                                        <th class="border border-zinc-350 px-2 py-1 w-12 font-semibold">Ayat</th>
+                                        <th class="border border-zinc-350 px-2 py-1 border-l font-semibold">Surat</th>
+                                        <th class="border border-zinc-350 px-2 py-1 w-12 font-semibold">Ayat</th>
+                                        <th class="border border-zinc-350 px-1 py-1 text-rose-700 w-8 font-bold">A</th>
+                                        <th class="border border-zinc-350 px-1 py-1 text-amber-600 w-8 font-bold">I</th>
+                                        <th class="border border-zinc-350 px-1 py-1 text-blue-600 w-8 font-bold">S</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($reports as $index => $row)
+                                        <tr class="border-b border-zinc-350 text-center">
+                                            <td class="border border-zinc-350 px-3 py-1.5 text-left text-zinc-500">{{ $index + 1 }}</td>
+                                            <td class="border border-zinc-350 px-3 py-1.5 text-left font-bold text-zinc-900">
+                                                {{ $row['student']->name }}
+                                                <div class="text-[9px] text-zinc-400 font-normal mt-0.5">NIS: {{ $row['student']->student_number ?: '-' }}</div>
+                                            </td>
+                                            <td class="border border-zinc-350 px-3 py-1.5 text-zinc-650">{{ $row['halaqah_label'] }}</td>
+                                            <td class="border border-zinc-350 px-2 py-1.5 text-zinc-700 font-medium">{{ $row['target_surah'] }}</td>
+                                            <td class="border border-zinc-350 px-2 py-1.5 text-zinc-900 font-semibold text-center">{{ $row['target_ayat'] }}</td>
+                                            <td class="border border-zinc-350 px-2 py-1.5 text-zinc-700 font-medium">{{ $row['capaian_surah'] }}</td>
+                                            <td class="border border-zinc-350 px-2 py-1.5 text-zinc-900 font-bold text-center">{{ $row['capaian_ayat'] }}</td>
+                                            <td class="border border-zinc-350 px-3 py-1.5">
+                                                @if ($row['is_tuntas'])
+                                                    <span class="text-emerald-700 font-bold uppercase text-[9px]">Tuntas</span>
+                                                @else
+                                                    <span class="text-rose-700 font-bold uppercase text-[9px]">Belum Tuntas</span>
+                                                @endif
+                                            </td>
+                                            <!-- Kehadiran (A/I/S) defaults to - as it is not tracked in DB -->
+                                            <td class="border border-zinc-350 px-1 py-1.5 text-zinc-400">-</td>
+                                            <td class="border border-zinc-350 px-1 py-1.5 text-zinc-400">-</td>
+                                            <td class="border border-zinc-350 px-1 py-1.5 text-zinc-400">-</td>
+                                            <td class="border border-zinc-350 px-3 py-1.5 font-bold {{ $row['violations_count'] > 0 ? 'text-rose-700' : 'text-zinc-400' }}">
+                                                {{ $row['violations_count'] }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    <!-- Summary Row -->
+                                    <tr class="bg-zinc-50 font-bold text-zinc-900">
+                                        <td colspan="3" class="border border-zinc-350 px-3 py-1.5 text-right uppercase text-[10px]">Prosentase Ketuntasan:</td>
+                                        @php
+                                            $totalGroup = count($reports);
+                                            $tuntasGroup = collect($reports)->where('is_tuntas', true)->count();
+                                            $tidakTuntasGroup = $totalGroup - $tuntasGroup;
+                                            $tuntasPct = $totalGroup > 0 ? round(($tuntasGroup / $totalGroup) * 100, 1) : 0;
+                                            $tidakTuntasPct = $totalGroup > 0 ? round(($tidakTuntasGroup / $totalGroup) * 100, 1) : 0;
+                                        @endphp
+                                        <td colspan="2" class="border border-zinc-350 px-2 py-1.5 text-center text-emerald-700">Tuntas: {{ $tuntasPct }}%</td>
+                                        <td colspan="2" class="border border-zinc-350 px-2 py-1.5 text-center text-rose-700">Belum Tuntas: {{ $tidakTuntasPct }}%</td>
+                                        <td colspan="5" class="border border-zinc-350 px-3 py-1.5 text-center text-zinc-500 font-medium">
+                                            Tuntas: {{ $tuntasGroup }} murid, Belum Tuntas: {{ $tidakTuntasGroup }} murid
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endforeach
+                </div>
+            @empty
+                <div class="border border-zinc-300 p-8 text-center text-zinc-500 text-xs rounded-xl">
+                    Tidak ada data perkembangan pada rentang waktu ini.
+                </div>
+            @endforelse
         </div>
 
         <!-- Signature Block -->

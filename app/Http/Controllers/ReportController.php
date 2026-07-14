@@ -673,6 +673,7 @@ class ReportController extends Controller
                 'classRooms' => collect(),
                 'selectedClass' => null,
                 'studentReports' => [],
+                'groupedReports' => [],
                 'summary' => [
                     'total_students' => 0,
                     'total_hafalan' => 0,
@@ -744,6 +745,7 @@ class ReportController extends Controller
 
         // Get class students
         $students = Student::query()
+            ->with(['teacher.user'])
             ->whereIn('id', $visibleStudentIds)
             ->where('class_room_id', $selectedClassId)
             ->orderBy('name')
@@ -919,6 +921,36 @@ class ReportController extends Controller
                 $tidakTuntasCount++;
             }
 
+            // Target Surah and Ayat (latest target_date <= $endDate)
+            $latestTarget = HafalanTarget::query()
+                ->with('surah')
+                ->where('student_id', $student->id)
+                ->where('target_date', '<=', $endDate)
+                ->orderBy('target_date', 'desc')
+                ->first();
+
+            $targetSurah = $latestTarget?->surah?->name_latin ?? '-';
+            $targetAyat = $latestTarget?->ayah_end ?? '-';
+
+            // Capaian Surah and Ayat (latest passed setoran submitted_at <= $endDate)
+            $latestHafalanPassed = HafalanRecord::query()
+                ->with('surah')
+                ->where('student_id', $student->id)
+                ->where('status', 'passed')
+                ->where('submitted_at', '<=', $endDate)
+                ->orderBy('submitted_at', 'desc')
+                ->first();
+
+            $capaianSurah = $latestHafalanPassed?->surah?->name_latin ?? '-';
+            $capaianAyat = $latestHafalanPassed?->ayah_end ?? '-';
+
+            // Violations count during the period
+            $violationsCount = \App\Models\StudentPoint::query()
+                ->where('student_id', $student->id)
+                ->where('type', 'violation')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->count();
+
             $studentReports[] = [
                 'student' => $student,
                 'total_hafalan' => $studentHafalan->count(),
@@ -928,13 +960,29 @@ class ReportController extends Controller
                 'capaian_baris' => $capaianBaris,
                 'target_baris' => $targetBaris,
                 'is_tuntas' => $isTuntas,
+                'target_surah' => $targetSurah,
+                'target_ayat' => $targetAyat,
+                'capaian_surah' => $capaianSurah,
+                'capaian_ayat' => $capaianAyat,
+                'violations_count' => $violationsCount,
+                'teacher_name' => $student->teacher?->user?->name ?? 'Tanpa Pembimbing',
+                'halaqah_label' => $student->tahfizh_level_label,
             ];
+        }
+
+        // Group the student reports by Teacher and then by Halaqah (Level)
+        $groupedReports = [];
+        foreach ($studentReports as $report) {
+            $tName = $report['teacher_name'];
+            $hLabel = $report['halaqah_label'];
+            $groupedReports[$tName][$hLabel][] = $report;
         }
 
         return [
             'classRooms' => $classRooms,
             'selectedClass' => $selectedClass,
             'studentReports' => $studentReports,
+            'groupedReports' => $groupedReports,
             'summary' => $summary,
             'chartLabels' => $chartLabels,
             'hafalanTrend' => $hafalanTrend,
