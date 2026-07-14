@@ -231,6 +231,10 @@
                                             </span>
                                         </div>
 
+                                        <div class="mb-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            {{ $row['completed_juz_count'] }} Juz ({{ $row['completed_juz_list'] }})
+                                        </div>
+
                                         <div class="h-2.5 w-56 overflow-hidden rounded-full bg-gray-100">
                                             <div class="h-2.5 rounded-full bg-emerald-600"
                                                  style="width: {{ min(100, max(0, (float) $row['progress_percent'])) }}%"></div>

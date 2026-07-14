@@ -131,7 +131,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
                         <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
                             <p class="text-sm text-gray-500">
                                 Ayat Hafal
@@ -139,6 +139,19 @@
 
                             <p class="mt-1 text-2xl font-bold text-gray-900">
                                 {{ number_format($progress['memorized_ayahs'] ?? 0) }}
+                            </p>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                            <p class="text-sm text-gray-500">
+                                Juz Hafal (Selesai)
+                            </p>
+
+                            <p class="mt-1 text-2xl font-bold text-emerald-600">
+                                {{ $progress['completed_juz_count'] ?? 0 }} Juz
+                            </p>
+                            <p class="text-[10px] text-gray-450 truncate mt-1" title="{{ $progress['completed_juz_list'] }}">
+                                {{ $progress['completed_juz_list'] }}
                             </p>
                         </div>
 

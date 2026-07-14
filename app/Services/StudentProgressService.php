@@ -16,6 +16,9 @@ use Illuminate\Support\Collection;
 
 class StudentProgressService
 {
+    private static ?array $allAyahs = null;
+    private static ?array $juzTotalAyahs = null;
+
     public function visibleStudentQuery(?User $user): Builder
     {
         $query = Student::query();
@@ -102,6 +105,7 @@ class StudentProgressService
             ->first();
 
         $activeTargetStatuses = ['active', 'planned', 'in_progress'];
+        $juzStats = $this->getJuzStats($student);
 
         return [
             'student' => $student,
@@ -115,6 +119,10 @@ class StudentProgressService
             'memorized_ayahs' => $memorizedAyahs,
             'remaining_ayahs' => max(0, $totalQuranAyahs - $memorizedAyahs),
             'progress_percent' => $progressPercent,
+            'completed_juz_count' => $juzStats['juz_count'],
+            'completed_juz_list' => $juzStats['juz_count'] > 0 
+                ? 'Juz ' . implode(', ', $juzStats['completed_juz'])
+                : 'Belum ada Juz lengkap',
 
             'total_hafalan_records' => (clone $hafalanRecordsQuery)->count(),
             'passed_hafalan_records' => (clone $hafalanRecordsQuery)
@@ -158,6 +166,71 @@ class StudentProgressService
                 ? $latestMurajaah->ayah_start . ' - ' . $latestMurajaah->ayah_end
                 : null,
             'latest_murajaah_date' => $latestMurajaah?->reviewed_at,
+        ];
+    }
+
+    private function getJuzStats(Student $student): array
+    {
+        if (self::$allAyahs === null) {
+            $ayahs = \Illuminate\Support\Facades\DB::table('ayahs')
+                ->select('id', 'surah_id', 'ayah_number', 'juz')
+                ->get();
+            
+            self::$allAyahs = [];
+            self::$juzTotalAyahs = [];
+            
+            foreach ($ayahs as $ayah) {
+                self::$allAyahs[$ayah->surah_id][$ayah->ayah_number] = $ayah->juz;
+                if (!isset(self::$juzTotalAyahs[$ayah->juz])) {
+                    self::$juzTotalAyahs[$ayah->juz] = 0;
+                }
+                self::$juzTotalAyahs[$ayah->juz]++;
+            }
+        }
+
+        $passedRecords = HafalanRecord::where('student_id', $student->id)
+            ->where('status', 'passed')
+            ->whereNotNull('surah_id')
+            ->whereNotNull('ayah_start')
+            ->whereNotNull('ayah_end')
+            ->get(['surah_id', 'ayah_start', 'ayah_end']);
+
+        $juzMemorizedCount = [];
+        $memorizedMap = [];
+
+        foreach ($passedRecords as $record) {
+            $start = (int) $record->ayah_start;
+            $end = (int) $record->ayah_end;
+            $surahId = (int) $record->surah_id;
+
+            for ($a = $start; $a <= $end; $a++) {
+                if (isset(self::$allAyahs[$surahId][$a])) {
+                    $juz = self::$allAyahs[$surahId][$a];
+                    $key = "{$surahId}-{$a}";
+                    if (!isset($memorizedMap[$key])) {
+                        $memorizedMap[$key] = true;
+                        if (!isset($juzMemorizedCount[$juz])) {
+                            $juzMemorizedCount[$juz] = 0;
+                        }
+                        $juzMemorizedCount[$juz]++;
+                    }
+                }
+            }
+        }
+
+        $completedJuz = [];
+        foreach (self::$juzTotalAyahs as $juz => $total) {
+            $memorized = $juzMemorizedCount[$juz] ?? 0;
+            if ($memorized >= $total) {
+                $completedJuz[] = $juz;
+            }
+        }
+
+        sort($completedJuz);
+
+        return [
+            'completed_juz' => $completedJuz,
+            'juz_count' => count($completedJuz),
         ];
     }
 

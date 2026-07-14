@@ -74,6 +74,11 @@ class User extends Authenticatable
             ->published();
     }
 
+    public function adabMaterials(): HasMany
+    {
+        return $this->hasMany(AdabMaterial::class, 'created_by');
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role?->name === $role;

@@ -220,4 +220,122 @@ class TahfizhLevelAndUmmiTest extends TestCase
         $response->assertViewHas('latestCapaianText', 'QS. Al-Fatihah (Ayat 1-7)');
         $response->assertViewHas('latestCapaianNotes', 'Sangat baik');
     }
+
+    public function test_progress_computes_correct_completed_juz()
+    {
+        $service = new \App\Services\StudentProgressService();
+
+        // Seed Al-Fatihah ayahs with Juz 1 in the database
+        // Delete any existing ayahs for surah 1 to make it clean
+        \Illuminate\Support\Facades\DB::table('ayahs')->where('surah_id', $this->surah->id)->delete();
+        for ($i = 1; $i <= 7; $i++) {
+            \Illuminate\Support\Facades\DB::table('ayahs')->insert([
+                'surah_id' => $this->surah->id,
+                'ayah_number' => $i,
+                'juz' => 1,
+            ]);
+        }
+
+        // Add a second Surah and an ayah under Juz 1 so that Juz 1 has unmemorized ayahs
+        $surah2 = Surah::create([
+            'number' => 2,
+            'name_arabic' => 'البقرة',
+            'name_latin' => 'Al-Baqarah',
+            'total_ayah' => 286,
+            'revelation_type' => 'medinan',
+        ]);
+        \Illuminate\Support\Facades\DB::table('ayahs')->insert([
+            'surah_id' => $surah2->id,
+            'ayah_number' => 1,
+            'juz' => 1,
+        ]);
+
+        // Initially no juz completed
+        $progress = $service->calculate($this->studentReguler);
+        $this->assertEquals(0, $progress['completed_juz_count']);
+        $this->assertEquals('Belum ada Juz lengkap', $progress['completed_juz_list']);
+
+        // Set student to pass all 7 ayahs of Al-Fatihah
+        HafalanRecord::create([
+            'student_id' => $this->studentReguler->id,
+            'teacher_id' => $this->teacher->id,
+            'surah_id' => $this->surah->id,
+            'ayah_start' => 1,
+            'ayah_end' => 7,
+            'submission_type' => 'new',
+            'score' => 95,
+            'status' => 'passed',
+            'submitted_at' => now(),
+        ]);
+
+        // Clear static cache in StudentProgressService to reload DB data
+        $ref = new \ReflectionClass(\App\Services\StudentProgressService::class);
+        $prop1 = $ref->getProperty('allAyahs');
+        $prop1->setAccessible(true);
+        $prop1->setValue(null, null);
+
+        $prop2 = $ref->getProperty('juzTotalAyahs');
+        $prop2->setAccessible(true);
+        $prop2->setValue(null, null);
+
+        // Now, since Al-Fatihah ayahs (which are all in Juz 1) are memorized,
+        // Juz 1 is still not complete if there are other ayahs under Juz 1 in DB.
+        $progress2 = $service->calculate($this->studentReguler);
+        $this->assertEquals(0, $progress2['completed_juz_count']);
+
+        // Let's create a custom Surah that represents all ayahs in Juz 30 for this test
+        $dummySurah = Surah::create([
+            'number' => 999,
+            'name_arabic' => 'الزلزلة',
+            'name_latin' => 'Az-Zalzalah',
+            'total_ayah' => 3,
+            'revelation_type' => 'meccan',
+        ]);
+        
+        \Illuminate\Support\Facades\DB::table('ayahs')->where('surah_id', $dummySurah->id)->delete();
+        for ($i = 1; $i <= 3; $i++) {
+            \Illuminate\Support\Facades\DB::table('ayahs')->insert([
+                'surah_id' => $dummySurah->id,
+                'ayah_number' => $i,
+                'juz' => 30,
+            ]);
+        }
+
+        // Reset cache again
+        $prop1->setValue(null, null);
+        $prop2->setValue(null, null);
+
+        // Complete 1 out of 3 ayahs for dummySurah
+        HafalanRecord::create([
+            'student_id' => $this->studentReguler->id,
+            'teacher_id' => $this->teacher->id,
+            'surah_id' => $dummySurah->id,
+            'ayah_start' => 1,
+            'ayah_end' => 1,
+            'submission_type' => 'new',
+            'score' => 90,
+            'status' => 'passed',
+            'submitted_at' => now(),
+        ]);
+
+        $progress3 = $service->calculate($this->studentReguler);
+        $this->assertEquals(0, $progress3['completed_juz_count']);
+
+        // Complete remaining 2 ayahs
+        HafalanRecord::create([
+            'student_id' => $this->studentReguler->id,
+            'teacher_id' => $this->teacher->id,
+            'surah_id' => $dummySurah->id,
+            'ayah_start' => 2,
+            'ayah_end' => 3,
+            'submission_type' => 'new',
+            'score' => 90,
+            'status' => 'passed',
+            'submitted_at' => now(),
+        ]);
+
+        $progress4 = $service->calculate($this->studentReguler);
+        $this->assertEquals(1, $progress4['completed_juz_count']);
+        $this->assertEquals('Juz 30', $progress4['completed_juz_list']);
+    }
 }

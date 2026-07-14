@@ -24,6 +24,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StudentPointController;
 use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\TahfizhExamController;
+use App\Http\Controllers\AdabMaterialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 
@@ -319,6 +320,24 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:super_admin,admin,teacher'])->group(function () {
         Route::post('/digital-reports/student/{student}', [StudentReportController::class, 'update'])->name('digital-reports.update');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Materi Adab
+    |--------------------------------------------------------------------------
+    |
+    */
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh,tanse'])->group(function () {
+        Route::get('/adab-materials', [AdabMaterialController::class, 'index'])->name('adab-materials.index');
+    });
+
+    Route::middleware(['role:super_admin,admin,teacher,supervisor,coordinator_tahfizh'])->group(function () {
+        Route::get('/adab-materials/create', [AdabMaterialController::class, 'create'])->name('adab-materials.create');
+        Route::post('/adab-materials', [AdabMaterialController::class, 'store'])->name('adab-materials.store');
+        Route::get('/adab-materials/{adabMaterial}/edit', [AdabMaterialController::class, 'edit'])->name('adab-materials.edit');
+        Route::put('/adab-materials/{adabMaterial}', [AdabMaterialController::class, 'update'])->name('adab-materials.update');
+        Route::delete('/adab-materials/{adabMaterial}', [AdabMaterialController::class, 'destroy'])->name('adab-materials.destroy');
     });
 });
 
