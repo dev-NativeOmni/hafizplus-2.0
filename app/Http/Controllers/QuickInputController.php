@@ -106,8 +106,9 @@ class QuickInputController extends Controller
         $validator = Validator::make($request->all(), [
             'student_id' => ['required', 'integer', 'exists:students,id'],
             'surah_id' => ['required', 'integer', 'exists:surahs,id'],
+            'surah_end_id' => ['nullable', 'integer', 'exists:surahs,id'],
             'ayah_start' => ['required', 'integer', 'min:1'],
-            'ayah_end' => ['required', 'integer', 'min:1', 'gte:ayah_start'],
+            'ayah_end' => ['required', 'integer', 'min:1'],
             'submission_type' => ['required', Rule::in(['new', 'continuation', 'revision'])],
             'score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'status' => ['required', Rule::in(['passed', 'repeat', 'needs_improvement'])],
@@ -120,10 +121,24 @@ class QuickInputController extends Controller
                 $validator->errors()->add('student_id', 'Santri tidak boleh diakses oleh akun ini.');
             }
 
-            $surah = Surah::query()->find($request->input('surah_id'));
+            $surahStart = Surah::query()->find($request->input('surah_id'));
+            $surahEndId = $request->input('surah_end_id') ?: $request->input('surah_id');
+            $surahEnd = Surah::query()->find($surahEndId);
 
-            if ($surah && (int) $request->input('ayah_end') > (int) $surah->total_ayah) {
-                $validator->errors()->add('ayah_end', "Ayat akhir tidak boleh melebihi {$surah->total_ayah}.");
+            if ($surahStart && $surahEnd) {
+                if ($surahEnd->number < $surahStart->number) {
+                    $validator->errors()->add('surah_end_id', 'Surah akhir tidak boleh mendahului surah mulai.');
+                }
+
+                if ((int) $surahEndId === (int) $request->input('surah_id')) {
+                    if ((int) $request->input('ayah_end') < (int) $request->input('ayah_start')) {
+                        $validator->errors()->add('ayah_end', 'Ayat akhir harus lebih besar atau sama dengan ayat mulai.');
+                    }
+                }
+
+                if ((int) $request->input('ayah_end') > (int) $surahEnd->total_ayah) {
+                    $validator->errors()->add('ayah_end', "Ayat akhir tidak boleh melebihi {$surahEnd->total_ayah}.");
+                }
             }
         });
 
@@ -139,18 +154,58 @@ class QuickInputController extends Controller
                 ->with('error', 'Santri ini belum memiliki guru pembimbing. Isi dulu guru pembimbing pada data santri.');
         }
 
-        HafalanRecord::query()->create([
-            'student_id' => $student->id,
-            'teacher_id' => $teacherId,
-            'surah_id' => $validated['surah_id'],
-            'ayah_start' => $validated['ayah_start'],
-            'ayah_end' => $validated['ayah_end'],
-            'submission_type' => $validated['submission_type'],
-            'score' => $validated['score'] ?? null,
-            'status' => $validated['status'],
-            'submitted_at' => $validated['submitted_at'],
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $surahStartId = (int) $validated['surah_id'];
+        $surahEndId = (int) ($validated['surah_end_id'] ?? $surahStartId);
+
+        if ($surahStartId === $surahEndId) {
+            HafalanRecord::query()->create([
+                'student_id' => $student->id,
+                'teacher_id' => $teacherId,
+                'surah_id' => $validated['surah_id'],
+                'ayah_start' => $validated['ayah_start'],
+                'ayah_end' => $validated['ayah_end'],
+                'submission_type' => $validated['submission_type'],
+                'score' => $validated['score'] ?? null,
+                'status' => $validated['status'],
+                'submitted_at' => $validated['submitted_at'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+        } else {
+            $surahStart = Surah::findOrFail($surahStartId);
+            $surahEnd = Surah::findOrFail($surahEndId);
+
+            $surahs = Surah::whereBetween('number', [$surahStart->number, $surahEnd->number])
+                ->orderBy('number')
+                ->get();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($surahs, $surahStart, $surahEnd, $validated, $student, $teacherId) {
+                foreach ($surahs as $surah) {
+                    $recordData = [
+                        'student_id' => $student->id,
+                        'teacher_id' => $teacherId,
+                        'surah_id' => $surah->id,
+                        'submission_type' => $validated['submission_type'],
+                        'score' => $validated['score'] ?? null,
+                        'status' => $validated['status'],
+                        'submitted_at' => $validated['submitted_at'],
+                        'notes' => $validated['notes'] ?? null,
+                    ];
+
+                    if ($surah->id === $surahStart->id) {
+                        $recordData['ayah_start'] = $validated['ayah_start'];
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    } elseif ($surah->id === $surahEnd->id) {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $validated['ayah_end'];
+                    } else {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    }
+
+                    HafalanRecord::query()->create($recordData);
+                }
+            });
+        }
 
         return redirect()
             ->route('quick-inputs.index')
@@ -166,8 +221,9 @@ class QuickInputController extends Controller
         $validator = Validator::make($request->all(), [
             'student_id' => ['required', 'integer', 'exists:students,id'],
             'surah_id' => ['required', 'integer', 'exists:surahs,id'],
+            'surah_end_id' => ['nullable', 'integer', 'exists:surahs,id'],
             'ayah_start' => ['required', 'integer', 'min:1'],
-            'ayah_end' => ['required', 'integer', 'min:1', 'gte:ayah_start'],
+            'ayah_end' => ['required', 'integer', 'min:1'],
             'fluency_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'tajwid_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'makhraj_score' => ['nullable', 'integer', 'min:0', 'max:100'],
@@ -182,14 +238,41 @@ class QuickInputController extends Controller
                 $validator->errors()->add('student_id', 'Santri tidak boleh diakses oleh akun ini.');
             }
 
-            $surah = Surah::query()->find($request->input('surah_id'));
+            $surahStart = Surah::query()->find($request->input('surah_id'));
+            $surahEndId = $request->input('surah_end_id') ?: $request->input('surah_id');
+            $surahEnd = Surah::query()->find($surahEndId);
 
-            if ($surah && (int) $request->input('ayah_end') > (int) $surah->total_ayah) {
-                $validator->errors()->add('ayah_end', "Ayat akhir tidak boleh melebihi {$surah->total_ayah}.");
+            if ($surahStart && $surahEnd) {
+                if ($surahEnd->number < $surahStart->number) {
+                    $validator->errors()->add('surah_end_id', 'Surah akhir tidak boleh mendahului surah mulai.');
+                }
+
+                if ((int) $surahEndId === (int) $request->input('surah_id')) {
+                    if ((int) $request->input('ayah_end') < (int) $request->input('ayah_start')) {
+                        $validator->errors()->add('ayah_end', 'Ayat akhir harus lebih besar atau sama dengan ayat mulai.');
+                    }
+                }
+
+                if ((int) $request->input('ayah_end') > (int) $surahEnd->total_ayah) {
+                    $validator->errors()->add('ayah_end', "Ayat akhir tidak boleh melebihi {$surahEnd->total_ayah}.");
+                }
             }
         });
 
         $validated = $validator->validate();
+
+        if (
+            blank($validated['overall_score'] ?? null)
+            && filled($validated['fluency_score'] ?? null)
+            && filled($validated['tajwid_score'] ?? null)
+            && filled($validated['makhraj_score'] ?? null)
+        ) {
+            $validated['overall_score'] = (int) round((
+                (float) $validated['fluency_score']
+                + (float) $validated['tajwid_score']
+                + (float) $validated['makhraj_score']
+            ) / 3);
+        }
 
         $student = Student::query()->findOrFail($validated['student_id']);
 
@@ -201,20 +284,62 @@ class QuickInputController extends Controller
                 ->with('error', 'Santri ini belum memiliki guru pembimbing. Isi dulu guru pembimbing pada data santri.');
         }
 
-        MurajaahRecord::query()->create([
-            'student_id' => $student->id,
-            'teacher_id' => $teacherId,
-            'surah_id' => $validated['surah_id'],
-            'ayah_start' => $validated['ayah_start'],
-            'ayah_end' => $validated['ayah_end'],
-            'fluency_score' => $validated['fluency_score'] ?? null,
-            'tajwid_score' => $validated['tajwid_score'] ?? null,
-            'makhraj_score' => $validated['makhraj_score'] ?? null,
-            'overall_score' => $validated['overall_score'] ?? null,
-            'status' => $validated['status'],
-            'reviewed_at' => $validated['reviewed_at'],
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $surahStartId = (int) $validated['surah_id'];
+        $surahEndId = (int) ($validated['surah_end_id'] ?? $surahStartId);
+
+        if ($surahStartId === $surahEndId) {
+            MurajaahRecord::query()->create([
+                'student_id' => $student->id,
+                'teacher_id' => $teacherId,
+                'surah_id' => $validated['surah_id'],
+                'ayah_start' => $validated['ayah_start'],
+                'ayah_end' => $validated['ayah_end'],
+                'fluency_score' => $validated['fluency_score'] ?? null,
+                'tajwid_score' => $validated['tajwid_score'] ?? null,
+                'makhraj_score' => $validated['makhraj_score'] ?? null,
+                'overall_score' => $validated['overall_score'] ?? null,
+                'status' => $validated['status'],
+                'reviewed_at' => $validated['reviewed_at'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+        } else {
+            $surahStart = Surah::findOrFail($surahStartId);
+            $surahEnd = Surah::findOrFail($surahEndId);
+
+            $surahs = Surah::whereBetween('number', [$surahStart->number, $surahEnd->number])
+                ->orderBy('number')
+                ->get();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($surahs, $surahStart, $surahEnd, $validated, $student, $teacherId) {
+                foreach ($surahs as $surah) {
+                    $recordData = [
+                        'student_id' => $student->id,
+                        'teacher_id' => $teacherId,
+                        'surah_id' => $surah->id,
+                        'fluency_score' => $validated['fluency_score'] ?? null,
+                        'tajwid_score' => $validated['tajwid_score'] ?? null,
+                        'makhraj_score' => $validated['makhraj_score'] ?? null,
+                        'overall_score' => $validated['overall_score'] ?? null,
+                        'status' => $validated['status'],
+                        'reviewed_at' => $validated['reviewed_at'],
+                        'notes' => $validated['notes'] ?? null,
+                    ];
+
+                    if ($surah->id === $surahStart->id) {
+                        $recordData['ayah_start'] = $validated['ayah_start'];
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    } elseif ($surah->id === $surahEnd->id) {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $validated['ayah_end'];
+                    } else {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    }
+
+                    MurajaahRecord::query()->create($recordData);
+                }
+            });
+        }
 
         return redirect()
             ->route('quick-inputs.index')

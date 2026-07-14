@@ -74,6 +74,10 @@
             <div x-data="{
                 selectedClass: '',
                 selectedStudentId: '{{ old('student_id', request('student_id', '')) }}',
+                surahStartHafalan: '{{ old('surah_id', '') }}',
+                surahEndHafalan: '{{ old('surah_end_id', '') }}',
+                surahStartMurajaah: '{{ old('surah_id', '') }}',
+                surahEndMurajaah: '{{ old('surah_end_id', '') }}',
                 allStudents: [
                     @foreach($students as $student)
                         { id: {{ $student->id }}, name: '{{ addslashes($student->name) }}', classId: '{{ $student->class_room_id }}', className: '{{ $student->classRoom?->name ?? '' }}', level: '{{ $student->tahfizh_level }}' },
@@ -149,21 +153,43 @@
                             </select>
                         </div>
 
-                        <div>
-                            <label for="hafalan_surah_id" class="block text-sm font-medium text-gray-700">
-                                Surah
-                            </label>
-                            <select id="hafalan_surah_id"
-                                    name="surah_id"
-                                    required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">Pilih surah</option>
-                                @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}" @selected(old('surah_id', request('surah_id')) == $surah->id)>
-                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="hafalan_surah_id" class="block text-sm font-medium text-gray-700">
+                                    Surah Mulai
+                                </label>
+                                <select id="hafalan_surah_id"
+                                        name="surah_id"
+                                        required
+                                        x-model="surahStartHafalan"
+                                        @change="if (!surahEndHafalan || surahEndHafalan == '') { surahEndHafalan = surahStartHafalan; }"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Pilih surah mulai</option>
+                                    @foreach ($surahs as $surah)
+                                        <option value="{{ $surah->id }}">
+                                            {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="hafalan_surah_end_id" class="block text-sm font-medium text-gray-700">
+                                    Surah Akhir
+                                </label>
+                                <select id="hafalan_surah_end_id"
+                                        name="surah_end_id"
+                                        required
+                                        x-model="surahEndHafalan"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Pilih surah akhir</option>
+                                    @foreach ($surahs as $surah)
+                                        <option value="{{ $surah->id }}">
+                                            {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -308,21 +334,43 @@
                             </select>
                         </div>
 
-                        <div>
-                            <label for="murajaah_surah_id" class="block text-sm font-medium text-gray-700">
-                                Surah
-                            </label>
-                            <select id="murajaah_surah_id"
-                                    name="surah_id"
-                                    required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">Pilih surah</option>
-                                @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}" @selected(old('surah_id', request('surah_id')) == $surah->id)>
-                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="murajaah_surah_id" class="block text-sm font-medium text-gray-700">
+                                    Surah Mulai
+                                </label>
+                                <select id="murajaah_surah_id"
+                                        name="surah_id"
+                                        required
+                                        x-model="surahStartMurajaah"
+                                        @change="if (!surahEndMurajaah || surahEndMurajaah == '') { surahEndMurajaah = surahStartMurajaah; }"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Pilih surah mulai</option>
+                                    @foreach ($surahs as $surah)
+                                        <option value="{{ $surah->id }}">
+                                            {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="murajaah_surah_end_id" class="block text-sm font-medium text-gray-700">
+                                    Surah Akhir
+                                </label>
+                                <select id="murajaah_surah_end_id"
+                                        name="surah_end_id"
+                                        required
+                                        x-model="surahEndMurajaah"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Pilih surah akhir</option>
+                                    @foreach ($surahs as $surah)
+                                        <option value="{{ $surah->id }}">
+                                            {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
