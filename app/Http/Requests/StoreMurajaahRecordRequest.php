@@ -57,6 +57,11 @@ class StoreMurajaahRecordRequest extends FormRequest
                 'integer',
                 Rule::exists('surahs', 'id'),
             ],
+            'surah_end_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('surahs', 'id'),
+            ],
             'ayah_start' => [
                 'required',
                 'integer',
@@ -66,7 +71,6 @@ class StoreMurajaahRecordRequest extends FormRequest
                 'required',
                 'integer',
                 'min:1',
-                'gte:ayah_start',
             ],
             'fluency_score' => [
                 'nullable',
@@ -112,13 +116,33 @@ class StoreMurajaahRecordRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $surah = Surah::find($this->input('surah_id'));
+            $surahStart = Surah::find($this->input('surah_id'));
+            $surahEndId = $this->input('surah_end_id') ?: $this->input('surah_id');
+            $surahEnd = Surah::find($surahEndId);
 
-            if ($surah && (int) $this->input('ayah_end') > $surah->total_ayah) {
-                $validator->errors()->add(
-                    'ayah_end',
-                    'Ayat akhir tidak boleh melebihi jumlah ayat surah ' . $surah->name_latin . ' (' . $surah->total_ayah . ' ayat).'
-                );
+            if ($surahStart && $surahEnd) {
+                if ($surahEnd->number < $surahStart->number) {
+                    $validator->errors()->add(
+                        'surah_end_id',
+                        'Surah akhir tidak boleh mendahului surah mulai.'
+                    );
+                }
+
+                if ((int) $surahEndId === (int) $this->input('surah_id')) {
+                    if ((int) $this->input('ayah_end') < (int) $this->input('ayah_start')) {
+                        $validator->errors()->add(
+                            'ayah_end',
+                            'Ayat akhir harus lebih besar atau sama dengan ayat mulai.'
+                        );
+                    }
+                }
+
+                if ((int) $this->input('ayah_end') > $surahEnd->total_ayah) {
+                    $validator->errors()->add(
+                        'ayah_end',
+                        'Ayat akhir tidak boleh melebihi jumlah ayat surah ' . $surahEnd->name_latin . ' (' . $surahEnd->total_ayah . ' ayat).'
+                    );
+                }
             }
 
             $student = Student::find($this->input('student_id'));
@@ -154,7 +178,8 @@ class StoreMurajaahRecordRequest extends FormRequest
     {
         return [
             'student_id' => 'santri',
-            'surah_id' => 'surah',
+            'surah_id' => 'surah mulai',
+            'surah_end_id' => 'surah akhir',
             'ayah_start' => 'ayat mulai',
             'ayah_end' => 'ayat akhir',
             'fluency_score' => 'nilai kelancaran',

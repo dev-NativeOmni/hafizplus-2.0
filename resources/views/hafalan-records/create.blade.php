@@ -11,6 +11,8 @@
                 <form method="POST" action="{{ route('hafalan-records.store') }}" class="space-y-6" x-data="{
                     selectedClass: '',
                     selectedStudent: '{{ old('student_id') }}',
+                    surahStart: '{{ old('surah_id', '') }}',
+                    surahEnd: '{{ old('surah_end_id', '') }}',
                     allStudents: [
                         @foreach($students as $student)
                             { id: {{ $student->id }}, name: '{{ addslashes($student->name) }}', nis: '{{ $student->student_number ?? '' }}', classId: '{{ $student->class_room_id }}', className: '{{ $student->classRoom?->name ?? '' }}' },
@@ -76,24 +78,51 @@
 
                         <div>
                             <label for="surah_id" class="block text-sm font-medium text-gray-700">
-                                Surah
+                                Surah Mulai
                             </label>
 
                             <select
                                 id="surah_id"
                                 name="surah_id"
+                                x-model="surahStart"
+                                @change="if (!surahEnd || surahEnd == '') { surahEnd = surahStart; }"
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                 required
                             >
-                                <option value="">Pilih Surah</option>
+                                <option value="">Pilih Surah Mulai</option>
                                 @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}" @selected((string) old('surah_id') === (string) $surah->id)>
+                                    <option value="{{ $surah->id }}">
                                         {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
                                     </option>
                                 @endforeach
                             </select>
 
                             @error('surah_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="surah_end_id" class="block text-sm font-medium text-gray-700">
+                                Surah Akhir
+                            </label>
+
+                            <select
+                                id="surah_end_id"
+                                name="surah_end_id"
+                                x-model="surahEnd"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                required
+                            >
+                                <option value="">Pilih Surah Akhir</option>
+                                @foreach ($surahs as $surah)
+                                    <option value="{{ $surah->id }}">
+                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            @error('surah_end_id')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>

@@ -5,6 +5,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-data="{
     selectedClass: '',
     selectedStudent: '{{ old('student_id', $record?->student_id) }}',
+    surahStart: '{{ old('surah_id', $record?->surah_id) }}',
+    surahEnd: '{{ old('surah_end_id', $record?->surah_id) }}',
     allStudents: [
         @foreach($students as $student)
             { id: {{ $student->id }}, name: '{{ addslashes($student->name) }}', nis: '{{ $student->student_number ?? '' }}', classId: '{{ $student->class_room_id }}', className: '{{ $student->classRoom?->name ?? '' }}' },
@@ -57,14 +59,16 @@
 
     <div>
         <label for="surah_id" class="block text-sm font-medium text-gray-700">
-            Surah
+            {{ $record ? 'Surah' : 'Surah Mulai' }}
         </label>
 
         <select id="surah_id"
                 name="surah_id"
+                x-model="surahStart"
+                @change="if (!surahEnd || surahEnd == '') { surahEnd = surahStart; }"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                 required>
-            <option value="">Pilih Surah</option>
+            <option value="">Pilih Surah{{ $record ? '' : ' Mulai' }}</option>
             @foreach ($surahs as $surah)
                 <option value="{{ $surah->id }}" @selected(old('surah_id', $record?->surah_id) == $surah->id)>
                     {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
@@ -76,6 +80,31 @@
             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
         @enderror
     </div>
+
+    @if(!$record)
+    <div>
+        <label for="surah_end_id" class="block text-sm font-medium text-gray-700">
+            Surah Akhir
+        </label>
+
+        <select id="surah_end_id"
+                name="surah_end_id"
+                x-model="surahEnd"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                required>
+            <option value="">Pilih Surah Akhir</option>
+            @foreach ($surahs as $surah)
+                <option value="{{ $surah->id }}">
+                    {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                </option>
+            @endforeach
+        </select>
+
+        @error('surah_end_id')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+    @endif
 
     <div>
         <label for="ayah_start" class="block text-sm font-medium text-gray-700">

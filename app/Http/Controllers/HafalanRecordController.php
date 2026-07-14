@@ -66,7 +66,42 @@ class HafalanRecordController extends Controller
     {
         $this->authorize('create', HafalanRecord::class);
 
-        HafalanRecord::query()->create($request->validated());
+        $validated = $request->validated();
+        $surahStartId = (int) $validated['surah_id'];
+        $surahEndId = (int) ($validated['surah_end_id'] ?? $surahStartId);
+
+        if ($surahStartId === $surahEndId) {
+            unset($validated['surah_end_id']);
+            HafalanRecord::query()->create($validated);
+        } else {
+            $surahStart = Surah::findOrFail($surahStartId);
+            $surahEnd = Surah::findOrFail($surahEndId);
+
+            $surahs = Surah::whereBetween('number', [$surahStart->number, $surahEnd->number])
+                ->orderBy('number')
+                ->get();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($surahs, $surahStart, $surahEnd, $validated) {
+                foreach ($surahs as $surah) {
+                    $recordData = $validated;
+                    unset($recordData['surah_end_id']);
+                    $recordData['surah_id'] = $surah->id;
+
+                    if ($surah->id === $surahStart->id) {
+                        $recordData['ayah_start'] = $validated['ayah_start'];
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    } elseif ($surah->id === $surahEnd->id) {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $validated['ayah_end'];
+                    } else {
+                        $recordData['ayah_start'] = 1;
+                        $recordData['ayah_end'] = $surah->total_ayah;
+                    }
+
+                    HafalanRecord::query()->create($recordData);
+                }
+            });
+        }
 
         return redirect()
             ->route('hafalan-records.index')
