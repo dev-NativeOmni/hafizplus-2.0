@@ -129,14 +129,14 @@
             <h3 class="text-xs font-black uppercase text-black">I. LAPORAN TAHFIDZ</h3>
             
             <!-- Table 1: Targets Summary -->
-            <table class="w-full border border-black text-xs text-left">
+            <table class="w-full table-fixed border border-black text-xs text-left">
                 <thead>
                     <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                        <th class="p-1 border-r border-black w-10">No.</th>
-                        <th class="p-1 border-r border-black w-48">TARGET</th>
-                        <th class="p-1 border-r border-black w-48">CAPAIAN</th>
-                        <th class="p-1 border-r border-black w-28">KETERANGAN</th>
-                        <th class="p-1">Deskripsi</th>
+                        <th class="p-1.5 border-r border-black w-[8%]">No.</th>
+                        <th class="p-1.5 border-r border-black w-[32%]">TARGET</th>
+                        <th class="p-1.5 border-r border-black w-[32%]">CAPAIAN</th>
+                        <th class="p-1.5 border-r border-black w-[12%]">KETERANGAN</th>
+                        <th class="p-1.5 w-[16%]">Deskripsi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -169,13 +169,13 @@
             </table>
 
             <!-- Table 2: Nilai Ujian (Recent Exams) -->
-            <table class="w-full border border-black text-xs text-left mt-4">
+            <table class="w-full table-fixed border border-black text-xs text-left mt-4">
                 <thead>
                     <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                        <th class="p-1 border-r border-black w-10">No.</th>
-                        <th class="p-1 border-r border-black">NILAI UJIAN</th>
-                        <th class="p-1 border-r border-black w-28">KETERANGAN</th>
-                        <th class="p-1">Deskripsi</th>
+                        <th class="p-1.5 border-r border-black w-[8%]">No.</th>
+                        <th class="p-1.5 border-r border-black w-[35%]">NILAI UJIAN</th>
+                        <th class="p-1.5 border-r border-black w-[20%]">KETERANGAN</th>
+                        <th class="p-1.5 w-[37%]">Deskripsi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,7 +211,7 @@
                 <tbody>
                     <tr class="border-b border-black">
                         <td class="p-2 border-r border-black text-center align-middle">1</td>
-                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA ALLAH ({{ round($avgAllah) }}%)</td>
+                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA ALLAH</td>
                         <td rowspan="4" class="p-2 border-r border-black text-center align-middle font-bold text-sm text-black">
                             @php
                                 $pred = \App\Models\Setting::getAdabGrade($avgTotal);
@@ -236,15 +236,15 @@
                     </tr>
                     <tr class="border-b border-black">
                         <td class="p-2 border-r border-black text-center align-middle">2</td>
-                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA SESAMA TEMAN ({{ round($avgTeman) }}%)</td>
+                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KEPADA SESAMA TEMAN</td>
                     </tr>
                     <tr class="border-b border-black">
                         <td class="p-2 border-r border-black text-center align-middle">3</td>
-                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KETIKA BELAJAR ({{ round($avgBelajar) }}%)</td>
+                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB KETIKA BELAJAR</td>
                     </tr>
                     <tr class="border-b border-black">
                         <td class="p-2 border-r border-black text-center align-middle">4</td>
-                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB TERHADAP LINGKUNGAN ({{ round($avgLingkungan) }}%)</td>
+                        <td class="p-2 border-r border-black font-semibold align-middle">ADAB TERHADAP LINGKUNGAN</td>
                     </tr>
                 </tbody>
             </table>
