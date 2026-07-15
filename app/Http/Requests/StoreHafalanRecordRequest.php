@@ -21,6 +21,68 @@ class StoreHafalanRecordRequest extends FormRequest
                 'teacher_id' => $this->user()->teacherProfile?->id,
             ]);
         }
+
+        if (! $this->has('surah_ids')) {
+            $this->merge(['__is_single' => true]);
+            $surahStartId = $this->input('surah_id');
+            $surahEndId = $this->input('surah_end_id') ?: $surahStartId;
+            $ayahStart = $this->input('ayah_start');
+            $ayahEnd = $this->input('ayah_end');
+
+            if ($surahStartId) {
+                $surahStart = Surah::find((int) $surahStartId);
+                $surahEnd = Surah::find((int) $surahEndId);
+
+                if ($surahStart && $surahEnd && $surahStart->number < $surahEnd->number) {
+                    $surahs = Surah::whereBetween('number', [$surahStart->number, $surahEnd->number])
+                        ->orderBy('number')
+                        ->get();
+
+                    $surahIds = [];
+                    $ayahStarts = [];
+                    $ayahEnds = [];
+                    $submissionTypes = [];
+                    $scores = [];
+                    $statuses = [];
+
+                    foreach ($surahs as $surah) {
+                        $surahIds[] = $surah->id;
+                        $submissionTypes[] = $this->input('submission_type');
+                        $scores[] = $this->input('score');
+                        $statuses[] = $this->input('status');
+
+                        if ($surah->id === $surahStart->id) {
+                            $ayahStarts[] = $ayahStart;
+                            $ayahEnds[] = $surah->total_ayah;
+                        } elseif ($surah->id === $surahEnd->id) {
+                            $ayahStarts[] = 1;
+                            $ayahEnds[] = $ayahEnd;
+                        } else {
+                            $ayahStarts[] = 1;
+                            $ayahEnds[] = $surah->total_ayah;
+                        }
+                    }
+
+                    $this->merge([
+                        'surah_ids' => $surahIds,
+                        'ayah_starts' => $ayahStarts,
+                        'ayah_ends' => $ayahEnds,
+                        'submission_types' => $submissionTypes,
+                        'scores' => $scores,
+                        'statuses' => $statuses,
+                    ]);
+                } else {
+                    $this->merge([
+                        'surah_ids' => [$surahStartId],
+                        'ayah_starts' => [$ayahStart],
+                        'ayah_ends' => [$ayahEnd],
+                        'submission_types' => [$this->input('submission_type')],
+                        'scores' => [$this->input('score')],
+                        'statuses' => [$this->input('status')],
+                    ]);
+                }
+            }
+        }
     }
 
     public function rules(): array
@@ -37,37 +99,61 @@ class StoreHafalanRecordRequest extends FormRequest
                 'integer',
                 Rule::exists('teacher_profiles', 'id'),
             ],
-            'surah_id' => [
+            'surah_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'surah_ids.*' => [
                 'required',
                 'integer',
                 Rule::exists('surahs', 'id'),
             ],
-            'surah_end_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('surahs', 'id'),
+            'ayah_starts' => [
+                'required',
+                'array',
+                'min:1',
             ],
-            'ayah_start' => [
+            'ayah_starts.*' => [
                 'required',
                 'integer',
                 'min:1',
             ],
-            'ayah_end' => [
+            'ayah_ends' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'ayah_ends.*' => [
                 'required',
                 'integer',
                 'min:1',
             ],
-            'submission_type' => [
+            'submission_types' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'submission_types.*' => [
                 'required',
                 Rule::in(['new', 'continuation', 'revision']),
             ],
-            'score' => [
+            'scores' => [
+                'nullable',
+                'array',
+            ],
+            'scores.*' => [
                 'nullable',
                 'numeric',
                 'min:0',
                 'max:100',
             ],
-            'status' => [
+            'statuses' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'statuses.*' => [
                 'required',
                 Rule::in(['passed', 'repeat', 'needs_improvement']),
             ],
@@ -87,32 +173,47 @@ class StoreHafalanRecordRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $surahStart = Surah::find($this->input('surah_id'));
-            $surahEndId = $this->input('surah_end_id') ?: $this->input('surah_id');
-            $surahEnd = Surah::find($surahEndId);
+            $isSingle = (bool) $this->input('__is_single');
 
-            if ($surahStart && $surahEnd) {
-                if ($surahEnd->number < $surahStart->number) {
+            if ($isSingle) {
+                $surahStartId = (int) $this->input('surah_id');
+                $surahEndId = (int) ($this->input('surah_end_id') ?: $surahStartId);
+                $surahStart = Surah::find($surahStartId);
+                $surahEnd = Surah::find($surahEndId);
+
+                if ($surahStart && $surahEnd && $surahEnd->number < $surahStart->number) {
                     $validator->errors()->add(
                         'surah_end_id',
                         'Surah akhir tidak boleh mendahului surah mulai.'
                     );
                 }
+            }
 
-                if ((int) $surahEndId === (int) $this->input('surah_id')) {
-                    if ((int) $this->input('ayah_end') < (int) $this->input('ayah_start')) {
-                        $validator->errors()->add(
-                            'ayah_end',
-                            'Ayat akhir harus lebih besar atau sama dengan ayat mulai.'
-                        );
+            $surahIds = $this->input('surah_ids') ?: [];
+            $ayahStarts = $this->input('ayah_starts') ?: [];
+            $ayahEnds = $this->input('ayah_ends') ?: [];
+
+            foreach ($surahIds as $idx => $surahId) {
+                $surahStart = Surah::find($surahId);
+                if ($surahStart) {
+                    $ayahStart = $ayahStarts[$idx] ?? null;
+                    $ayahEnd = $ayahEnds[$idx] ?? null;
+
+                    if ($ayahStart !== null && $ayahEnd !== null) {
+                        if ((int) $ayahEnd < (int) $ayahStart) {
+                            $validator->errors()->add(
+                                "ayah_ends.{$idx}",
+                                'Ayat akhir harus lebih besar atau sama dengan ayat mulai.'
+                            );
+                        }
+
+                        if ((int) $ayahEnd > $surahStart->total_ayah) {
+                            $validator->errors()->add(
+                                "ayah_ends.{$idx}",
+                                'Ayat akhir tidak boleh melebihi jumlah ayat surah ' . $surahStart->name_latin . ' (' . $surahStart->total_ayah . ' ayat).'
+                            );
+                        }
                     }
-                }
-
-                if ((int) $this->input('ayah_end') > $surahEnd->total_ayah) {
-                    $validator->errors()->add(
-                        'ayah_end',
-                        'Ayat akhir tidak boleh melebihi jumlah ayat surah ' . $surahEnd->name_latin . ' (' . $surahEnd->total_ayah . ' ayat).'
-                    );
                 }
             }
 
@@ -142,6 +243,45 @@ class StoreHafalanRecordRequest extends FormRequest
                     );
                 }
             }
+
+            if ($isSingle) {
+                $errors = $validator->errors();
+
+                if ($errors->has('surah_ids.0')) {
+                    $errors->add('surah_id', $errors->first('surah_ids.0'));
+                }
+                if ($errors->has('ayah_starts.0')) {
+                    $errors->add('ayah_start', $errors->first('ayah_starts.0'));
+                }
+                if ($errors->has('ayah_ends.0')) {
+                    $errors->add('ayah_end', $errors->first('ayah_ends.0'));
+                }
+                if ($errors->has('submission_types.0')) {
+                    $errors->add('submission_type', $errors->first('submission_types.0'));
+                }
+                if ($errors->has('scores.0')) {
+                    $errors->add('score', $errors->first('scores.0'));
+                }
+                if ($errors->has('statuses.0')) {
+                    $errors->add('status', $errors->first('statuses.0'));
+                }
+
+                if ($errors->has('surah_ids')) {
+                    $errors->add('surah_id', 'Surah wajib diisi.');
+                }
+                if ($errors->has('ayah_starts')) {
+                    $errors->add('ayah_start', 'Ayat mulai wajib diisi.');
+                }
+                if ($errors->has('ayah_ends')) {
+                    $errors->add('ayah_end', 'Ayat akhir wajib diisi.');
+                }
+                if ($errors->has('submission_types')) {
+                    $errors->add('submission_type', 'Jenis setoran wajib diisi.');
+                }
+                if ($errors->has('statuses')) {
+                    $errors->add('status', 'Status setoran wajib diisi.');
+                }
+            }
         });
     }
 
@@ -149,13 +289,13 @@ class StoreHafalanRecordRequest extends FormRequest
     {
         return [
             'student_id' => 'santri',
-            'surah_id' => 'surah mulai',
-            'surah_end_id' => 'surah akhir',
-            'ayah_start' => 'ayat mulai',
-            'ayah_end' => 'ayat akhir',
-            'submission_type' => 'jenis setoran',
-            'score' => 'nilai',
-            'status' => 'status setoran',
+            'surah_ids' => 'surah',
+            'surah_ids.*' => 'surah',
+            'ayah_starts.*' => 'ayat mulai',
+            'ayah_ends.*' => 'ayat akhir',
+            'submission_types.*' => 'jenis setoran',
+            'scores.*' => 'nilai',
+            'statuses.*' => 'status setoran',
             'notes' => 'catatan',
             'submitted_at' => 'tanggal setoran',
         ];

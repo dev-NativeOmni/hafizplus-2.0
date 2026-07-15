@@ -316,4 +316,52 @@ class HafalanRecordTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewHas('hafalanRecords', fn ($records) => $records->total() >= 1);
     }
+
+    #[Test]
+    public function admin_can_store_multiple_hafalan_records_at_once(): void
+    {
+        $surah2 = \App\Models\Surah::create([
+            'number' => 2,
+            'name_arabic' => 'البقرة',
+            'name_latin' => 'Al-Baqarah',
+            'total_ayah' => 286,
+            'revelation_type' => 'medinan',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('hafalan-records.store'), [
+            'student_id'      => $this->student->id,
+            'teacher_id'      => $this->teacherProfile->id,
+            'surah_ids'       => [$this->surah->id, $surah2->id],
+            'ayah_starts'     => [1, 5],
+            'ayah_ends'       => [7, 10],
+            'submission_types'=> ['new', 'continuation'],
+            'scores'          => [95, 85],
+            'statuses'        => ['passed', 'repeat'],
+            'notes'           => 'Multi setoran.',
+            'submitted_at'    => now()->toDateString(),
+        ]);
+
+        $response->assertRedirect(route('hafalan-records.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('hafalan_records', [
+            'student_id'      => $this->student->id,
+            'surah_id'        => $this->surah->id,
+            'ayah_start'      => 1,
+            'ayah_end'        => 7,
+            'submission_type' => 'new',
+            'score'           => 95.00,
+            'status'          => 'passed',
+        ]);
+
+        $this->assertDatabaseHas('hafalan_records', [
+            'student_id'      => $this->student->id,
+            'surah_id'        => $surah2->id,
+            'ayah_start'      => 5,
+            'ayah_end'        => 10,
+            'submission_type' => 'continuation',
+            'score'           => 85.00,
+            'status'          => 'repeat',
+        ]);
+    }
 }

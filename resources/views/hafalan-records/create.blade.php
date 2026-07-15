@@ -11,8 +11,22 @@
                 <form method="POST" action="{{ route('hafalan-records.store') }}" class="space-y-6" x-data="{
                     selectedClass: '',
                     selectedStudent: '{{ old('student_id') }}',
-                    surahStart: '{{ old('surah_id', '') }}',
-                    surahEnd: '{{ old('surah_end_id', '') }}',
+                    hafalans: [
+                        @if(old('surah_ids'))
+                            @foreach(old('surah_ids') as $index => $oldSurahId)
+                                {
+                                    surah_id: '{{ $oldSurahId }}',
+                                    ayah_start: '{{ old("ayah_starts")[$index] ?? "" }}',
+                                    ayah_end: '{{ old("ayah_ends")[$index] ?? "" }}',
+                                    submission_type: '{{ old("submission_types")[$index] ?? "new" }}',
+                                    score: '{{ old("scores")[$index] ?? "" }}',
+                                    status: '{{ old("statuses")[$index] ?? "passed" }}'
+                                },
+                            @endforeach
+                        @else
+                            { surah_id: '', ayah_start: '', ayah_end: '', submission_type: 'new', score: '', status: 'passed' }
+                        @endif
+                    ],
                     allStudents: [
                         @foreach($students as $student)
                             { id: {{ $student->id }}, name: '{{ addslashes($student->name) }}', nis: '{{ $student->student_number ?? '' }}', classId: '{{ $student->class_room_id }}', className: '{{ $student->classRoom?->name ?? '' }}' },
@@ -30,7 +44,8 @@
                 }">
                     @csrf
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Saring & Santri & Tanggal -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div>
                             <label for="class_room_filter" class="block text-sm font-medium text-gray-700">
                                 Saring Berdasarkan Kelas
@@ -38,7 +53,7 @@
                             <select
                                 id="class_room_filter"
                                 x-model="selectedClass"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">Semua Kelas</option>
                                 @foreach ($classRooms as $class)
@@ -56,7 +71,7 @@
                                 id="student_id"
                                 name="student_id"
                                 x-model="selectedStudent"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 required
                             >
                                 <option value="">Pilih Santri</option>
@@ -77,160 +92,6 @@
                         </div>
 
                         <div>
-                            <label for="surah_id" class="block text-sm font-medium text-gray-700">
-                                Surah Mulai
-                            </label>
-
-                            <select
-                                id="surah_id"
-                                name="surah_id"
-                                x-model="surahStart"
-                                @change="if (!surahEnd || surahEnd == '') { surahEnd = surahStart; }"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="">Pilih Surah Mulai</option>
-                                @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}">
-                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            @error('surah_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="surah_end_id" class="block text-sm font-medium text-gray-700">
-                                Surah Akhir
-                            </label>
-
-                            <select
-                                id="surah_end_id"
-                                name="surah_end_id"
-                                x-model="surahEnd"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="">Pilih Surah Akhir</option>
-                                @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}">
-                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            @error('surah_end_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="ayah_start" class="block text-sm font-medium text-gray-700">
-                                Ayat Mulai
-                            </label>
-
-                            <input
-                                id="ayah_start"
-                                name="ayah_start"
-                                type="number"
-                                min="1"
-                                value="{{ old('ayah_start') }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-
-                            @error('ayah_start')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="ayah_end" class="block text-sm font-medium text-gray-700">
-                                Ayat Akhir
-                            </label>
-
-                            <input
-                                id="ayah_end"
-                                name="ayah_end"
-                                type="number"
-                                min="1"
-                                value="{{ old('ayah_end') }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-
-                            @error('ayah_end')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="submission_type" class="block text-sm font-medium text-gray-700">
-                                Jenis Setoran
-                            </label>
-
-                            <select
-                                id="submission_type"
-                                name="submission_type"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="new" @selected(old('submission_type', 'new') === 'new')>Baru</option>
-                                <option value="continuation" @selected(old('submission_type') === 'continuation')>Lanjutan</option>
-                                <option value="revision" @selected(old('submission_type') === 'revision')>Perbaikan</option>
-                            </select>
-
-                            @error('submission_type')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="score" class="block text-sm font-medium text-gray-700">
-                                Nilai
-                            </label>
-
-                            <input
-                                id="score"
-                                name="score"
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                value="{{ old('score') }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                            >
-
-                            @error('score')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700">
-                                Status Setoran
-                            </label>
-
-                            <select
-                                id="status"
-                                name="status"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="passed" @selected(old('status') === 'passed')>Lulus</option>
-                                <option value="repeat" @selected(old('status') === 'repeat')>Ulang</option>
-                                <option value="needs_improvement" @selected(old('status', 'needs_improvement') === 'needs_improvement')>Perlu Perbaikan</option>
-                            </select>
-
-                            @error('status')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
                             <label for="submitted_at" class="block text-sm font-medium text-gray-700">
                                 Tanggal Setoran
                             </label>
@@ -240,7 +101,7 @@
                                 name="submitted_at"
                                 type="date"
                                 value="{{ old('submitted_at', now()->format('Y-m-d')) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 required
                             >
 
@@ -248,24 +109,174 @@
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+                    </div>
 
-                        <div class="md:col-span-2">
-                            <label for="notes" class="block text-sm font-medium text-gray-700">
-                                Catatan Guru
-                            </label>
-
-                            <textarea
-                                id="notes"
-                                name="notes"
-                                rows="4"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                placeholder="Contoh: Lancar, tajwid masih perlu diperbaiki pada mad."
-                            >{{ old('notes') }}</textarea>
-
-                            @error('notes')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                    <!-- Dynamic Setoran List -->
+                    <div class="mt-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold uppercase text-gray-600 tracking-wider">
+                                Daftar Setoran Hafalan
+                            </h3>
+                            <button
+                                type="button"
+                                @click="hafalans.push({ surah_id: '', ayah_start: '', ayah_end: '', submission_type: 'new', score: '', status: 'passed' })"
+                                class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold shadow-sm transition-colors"
+                            >
+                                + Tambah Baris Setoran
+                            </button>
                         </div>
+
+                        <!-- Error list jika ada -->
+                        @if ($errors->any())
+                            <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 space-y-1">
+                                <p class="font-bold">Ada beberapa kesalahan input setoran:</p>
+                                <ul class="list-disc pl-4 space-y-0.5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <div class="space-y-4">
+                            <template x-for="(item, index) in hafalans" :key="index">
+                                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative space-y-4">
+                                    
+                                    <!-- Row Header -->
+                                    <div class="flex items-center justify-between border-b pb-2">
+                                        <span class="text-xs font-bold text-gray-500" x-text="'Setoran #' + (index + 1)"></span>
+                                        <button
+                                            type="button"
+                                            @click="if (hafalans.length > 1) { hafalans.splice(index, 1); } else { item.surah_id = ''; item.ayah_start = ''; item.ayah_end = ''; item.submission_type = 'new'; item.score = ''; item.status = 'passed'; }"
+                                            class="text-xs text-red-600 hover:text-red-800 font-medium"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
+
+                                    <!-- Row Inputs -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+                                        <!-- Surah -->
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Surah
+                                            </label>
+                                            <select
+                                                :name="'surah_ids['+index+']'"
+                                                x-model="item.surah_id"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                                required
+                                            >
+                                                <option value="">Pilih Surah</option>
+                                                @foreach ($surahs as $surah)
+                                                    <option value="{{ $surah->id }}">
+                                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <!-- Ayat Mulai -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Ayat Mulai
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                :name="'ayah_starts['+index+']'"
+                                                x-model="item.ayah_start"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                                required
+                                            >
+                                        </div>
+
+                                        <!-- Ayat Akhir -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Ayat Akhir
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                :name="'ayah_ends['+index+']'"
+                                                x-model="item.ayah_end"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                                required
+                                            >
+                                        </div>
+
+                                        <!-- Jenis Setoran -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Jenis Setoran
+                                            </label>
+                                            <select
+                                                :name="'submission_types['+index+']'"
+                                                x-model="item.submission_type"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                                required
+                                            >
+                                                <option value="new">Baru</option>
+                                                <option value="continuation">Lanjutan</option>
+                                                <option value="revision">Perbaikan</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Nilai -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Nilai
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                :name="'scores['+index+']'"
+                                                x-model="item.score"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                            >
+                                        </div>
+
+                                        <!-- Status Setoran -->
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                                Status Setoran
+                                            </label>
+                                            <select
+                                                :name="'statuses['+index+']'"
+                                                x-model="item.status"
+                                                class="block w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                                required
+                                            >
+                                                <option value="passed">Lulus</option>
+                                                <option value="repeat">Ulang</option>
+                                                <option value="needs_improvement">Perlu Perbaikan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Catatan Guru -->
+                    <div class="mt-6">
+                        <label for="notes" class="block text-sm font-medium text-gray-700">
+                            Catatan Guru (Berlaku untuk semua setoran di atas)
+                        </label>
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            rows="4"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            placeholder="Contoh: Lancar, tajwid masih perlu diperbaiki pada mad."
+                        >{{ old('notes') }}</textarea>
+                        @error('notes')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex items-center justify-end gap-3">
@@ -275,7 +286,7 @@
 
                         <button
                             type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
+                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                         >
                             Simpan Setoran
                         </button>
