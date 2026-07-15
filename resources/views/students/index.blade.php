@@ -217,6 +217,7 @@
                     <li><strong>Tanggal Lahir</strong> (Opsional): format YYYY-MM-DD</li>
                     <li><strong>Status</strong> (Opsional): active / inactive / graduated</li>
                     <li><strong>Kelas</strong> (Opsional): Nama kelas yang sesuai di sistem</li>
+                    <li><strong>Level Tahfizh</strong> (Opsional): <code>tahsin</code>, <code>reguler</code>, <code>akselerasi</code>, atau <code>ummi</code></li>
                     <li><strong>Username Guru</strong> (Opsional): Username akun guru pembimbing</li>
                     <li><strong>Username Santri</strong> (Opsional): Username akun santri</li>
                     <li><strong>Username Orangtua</strong> (Opsional): Username akun orangtua, pisahkan dengan koma jika memiliki lebih dari satu orangtua (contoh: <code>ortu1,ortu2</code>).</li>

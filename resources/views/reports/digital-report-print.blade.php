@@ -169,13 +169,13 @@
             </table>
 
             <!-- Table 2: Nilai Ujian (Recent Exams) -->
-            <table class="w-full table-fixed border border-black border-t-0 text-xs text-left mt-0">
+            <table class="w-full table-fixed border border-black text-xs text-left mt-4">
                 <thead>
                     <tr class="bg-gray-100 border-b border-black text-center font-bold">
                         <th class="p-1.5 border-r border-black w-[8%]">No.</th>
-                        <th class="p-1.5 border-r border-black w-[64%]">NILAI UJIAN</th>
-                        <th class="p-1.5 border-r border-black w-[12%]">KETERANGAN</th>
-                        <th class="p-1.5 w-[16%]">Deskripsi</th>
+                        <th class="p-1.5 border-r border-black w-[35%]">NILAI UJIAN</th>
+                        <th class="p-1.5 border-r border-black w-[20%]">KETERANGAN</th>
+                        <th class="p-1.5 w-[37%]">Deskripsi</th>
                     </tr>
                 </thead>
                 <tbody>

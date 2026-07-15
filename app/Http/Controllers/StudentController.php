@@ -247,6 +247,7 @@ class StudentController extends Controller
             'Username Santri',
             'Username Orangtua',
             'Hubungan Orangtua',
+            'Level Tahfizh',
         ];
 
         $data = [];
@@ -262,6 +263,7 @@ class StudentController extends Controller
                 $student->user?->username,
                 $student->parents->map(fn($p) => $p->user?->username)->implode(','),
                 $student->parents->map(fn($p) => $p->pivot?->relation)->implode(','),
+                $student->tahfizh_level,
             ];
         }
 

@@ -119,6 +119,7 @@ class StudentImportExportTest extends TestCase
         $this->assertContains('Nomor Induk', $headers);
         $this->assertContains('Username Orangtua', $headers);
         $this->assertContains('Hubungan Orangtua', $headers);
+        $this->assertContains('Level Tahfizh', $headers);
 
         // Assert student row data
         $found = false;
@@ -128,6 +129,7 @@ class StudentImportExportTest extends TestCase
                 $this->assertEquals($student->student_number, $row[1]);
                 $this->assertEquals('testparent1,testparent2', $row[8]); // Username Orangtua
                 $this->assertEquals('Ayah,Ibu', $row[9]); // Hubungan Orangtua
+                $this->assertEquals($student->tahfizh_level, $row[10]); // Level Tahfizh
             }
         }
         $this->assertTrue($found);
