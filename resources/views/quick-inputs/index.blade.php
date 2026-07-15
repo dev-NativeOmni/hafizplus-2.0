@@ -589,7 +589,7 @@
                                                 <option value="">Pilih Surah</option>
                                                 @foreach ($surahs as $surah)
                                                     <option value="{{ $surah->id }}">
-                                                        {{ $surah->number }}. {{ $surah->name_latin }}
+                                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
                                                     </option>
                                                 @endforeach
                                             </select>
