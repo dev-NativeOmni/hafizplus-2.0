@@ -169,8 +169,9 @@
 <!-- Desktop Sidebar -->
 <aside class="hidden md:flex md:w-56 md:flex-col md:fixed md:inset-y-0 z-20 bg-white/75 dark:bg-[#09090b]/60 backdrop-blur-xl border-r border-zinc-200 dark:border-white/5 transition-colors duration-200">
     <!-- Desktop Sidebar Logo -->
-    <div class="flex-shrink-0 h-16 flex items-center justify-between px-6 border-b border-zinc-200 dark:border-white/5 bg-zinc-50/50 dark:bg-[#09090b]/40 transition-colors duration-200">
-        <a href="{{ route('dashboard') }}" class="font-bold text-lg text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
+    <div class="flex-shrink-0 h-16 flex items-center justify-between px-6 border-b border-zinc-200 dark:border-white/5 bg-zinc-50/50 dark:bg-[#09090b]/40 transition-colors duration-200 relative">
+        <!-- Logo (Left) -->
+        <a href="{{ route('dashboard') }}" class="z-10">
             @if ($logo)
                 <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 flex-shrink-0">
                     <img src="{{ asset('storage/' . $logo) }}" class="h-5 w-5 object-contain" alt="Logo">
@@ -182,11 +183,17 @@
                     </svg>
                 </div>
             @endif
-            <span class="truncate max-w-[120px]">{{ $namaInstansi ?: 'IMS' }}</span>
         </a>
 
-        <!-- Theme Toggle Button -->
-        <button @click="toggleTheme()" class="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200/60 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-150" title="Ubah Tema">
+        <!-- Title (Center Absolute) -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <a href="{{ route('dashboard') }}" class="pointer-events-auto font-bold text-lg text-zinc-900 dark:text-white tracking-tight truncate max-w-[100px] text-center">
+                {{ $namaInstansi ?: 'IMS' }}
+            </a>
+        </div>
+
+        <!-- Theme Toggle Button (Right) -->
+        <button @click="toggleTheme()" class="z-10 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200/60 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-150" title="Ubah Tema">
             <svg x-show="dark" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
             </svg>
